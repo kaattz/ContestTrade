@@ -1,0 +1,16 @@
+tqdm
+requests
+matplotlib
+tushare
+loguru
+openai
+tiktoken
+finnhub-python
+typer
+pydantic
+questionary
+PyYAML
+pandas
+langgraph
+rich
+tabulate
