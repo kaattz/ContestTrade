@@ -10,25 +10,26 @@
   <a href="README.md">中文</a> | <a href="README_en.md">English</a>
 </div>
 
------
-
+---
 # ContestTrade: A Multi-Agent Trading System Based on an Internal Contest Mechanism
 
 **ContestTrade** is an innovative multi-agent trading framework that introduces a unique internal contest mechanism. By simulating the teamwork and internal competition found in real-world investment firms, it maintains robust decision-making and achieves superior trading performance in dynamic market environments.
 
-##  Introduction
+> **Note:** This framework currently only supports the **Chinese A-share** market.
 
-  * **🏆 Internal Contest Mechanism:** This is the core innovation of the framework. The performance of all agents within the system is continuously scored and ranked. Only the outputs (whether data factors or trading signals) from the top-performing agents are adopted, enabling a merit-based system of elimination and continuous self-optimization.
-  * **👥 Two-Tiered Team Framework:** The system features a clear structural design that mimics professional investment firms.
-      * **Data Team:** Responsible for processing vast amounts of market data and refining it into a diverse portfolio of high-density textual factors.
-      * **Research Team:** Conducts parallel, multi-path deep research based on the effective factors provided by the Data Team to generate final trading decisions.
-  * **🛠️ Deep Research:** Research agents are equipped with a powerful suite of professional financial tools (such as stock screening, financial data analysis, web search, etc.), allowing them to autonomously plan and execute in-depth analysis, significantly enhancing the quality of trading signals.
-  * **🔌 Self-Adaptive Resource Allocation:** Through a contest mechanism based on real market feedback, the system adaptively adjusts the resource allocation between the Data and Research teams, effectively improving the overall quality, stability, and reliability of its decisions.
+##  Introduction
+
+*   **🏆 Internal Contest Mechanism:** This is the core innovation of the framework. The performance of all agents within the system is continuously scored and ranked. Only the outputs (whether data factors or trading signals) from the top-performing agents are adopted, enabling a merit-based system of elimination and continuous self-optimization.
+*   **👥 Two-Tiered Team Framework:** The system features a clear structural design that mimics professional investment firms.
+    *   **Data Team:** Responsible for processing vast amounts of market data and refining it into a diverse portfolio of high-density textual factors.
+    *   **Research Team:** Conducts parallel, multi-path deep research based on the effective factors provided by the Data Team to generate final trading decisions.
+*   **🛠️ Deep Research:** Research agents are equipped with a powerful suite of professional financial tools (such as stock screening, financial data analysis, web search, etc.), allowing them to autonomously plan and execute in-depth analysis, significantly enhancing the quality of trading signals.
+*   **🔌 Self-Adaptive Resource Allocation:** Through a contest mechanism based on real market feedback, the system adaptively adjusts the resource allocation between the Data and Research teams, effectively improving the overall quality, stability, and reliability of its decisions.
 
 ## Framework Overview
 
 <p align="center">
-  <img src="assets/architecture.jpg" style="width: 90%; height: auto;">
+  <img src="assets/architecture.jpg" style="width: 90%; height: auto;">
 </p>
 
 The workflow of ContestTrade operates through a structured two-stage pipeline, simulating the dynamic decision-making process of an investment firm. This dual-contest framework ensures that final decisions are driven only by the most robust and effective insights, maintaining strong adaptability and resilience in complex markets.
@@ -78,17 +79,33 @@ You can easily start ContestTrade via the command-line interface (CLI).
 python -m cli.main run
 ```
 
-After the program starts, you will enter an interactive terminal interface where you can follow the prompts for subsequent operations.
+After the program starts, you will enter an interactive terminal interface. You can follow the prompts to select a trigger time and then proceed to the analysis process.
+
+![CLI](assets/cli.jpg)
+
+
+
+## Disclaimer
+
+**Important Disclaimer:** This project, `ContestTrade`, is an open-source quantitative trading research framework intended for academic and educational purposes only. The examples, data, and analysis results included in the project do not constitute any form of investment advice.
+
+**Risk Warning:**
+*   **Market Risk:** This project does not constitute any form of investment, financial, legal, or tax advice. All outputs, including trading signals and analyses, are the results of AI model deductions based on historical data and should not be considered a basis for any buy or sell operations.
+*   **Data Accuracy:** The data sources used by the framework may be subject to delays, inaccuracies, or incompleteness. We do not guarantee the reliability of the data.
+*   **Model Hallucination:** AI models (including Large Language Models) have inherent limitations and are subject to the risk of "hallucination." We do not guarantee the accuracy, completeness, or timeliness of the information generated by the framework.
+*   **Liability:** The developers assume no liability for any direct or indirect losses resulting from the use of or inability to use this framework. Investing involves risks; enter the market with caution.
+
+**Before using this framework for any actual trading decisions, be sure to fully understand the associated risks.**
 
 ## Contributing
 
-We warmly welcome contributions from the community\! Whether you want to fix a bug, add a new financial tool, or improve the documentation, your help is vital to us.
+We warmly welcome contributions from the community! Whether you want to fix a bug, add a new financial tool, or improve the documentation, your help is vital to us.
 
 If you are interested, here are a few ways to get started:
 
-  * Check the `Issues` page to find problems you can help solve.
-  * Propose your new feature ideas.
-  * Help us improve and translate the documentation.
+*   Check the `Issues` page to find problems you can help solve.
+*   Propose your new feature ideas.
+*   Help us improve and translate the documentation.
 
 ## Citation
 
@@ -107,4 +124,4 @@ If you use ContestTrade in your research, please cite our paper:
 
 ## License
 
-This project is licensed under the [Apache 2.0 License](https://www.google.com/search?q=LICENSE).
+This project is licensed under the [Apache 2.0 License](LICENSE).
