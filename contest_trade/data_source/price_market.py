@@ -4,11 +4,13 @@
 """
 import pandas as pd
 import asyncio
+import traceback
 from datetime import datetime
 from data_source.data_source_base import DataSourceBase
 from utils.tushare_provider import TushareDataProvider
 from models.llm_model import GLOBAL_LLM, GLOBAL_VISION_LLM
 from loguru import logger
+from config.config import cfg
 
 class PriceMarket(DataSourceBase):
     def __init__(self):
@@ -258,13 +260,12 @@ class PriceMarket(DataSourceBase):
             
             logger.info(f"获取 {trade_date} 的价格市场LLM分析总结")
             
-            loop = asyncio.get_event_loop()
-            
-            result = await loop.run_in_executor(None, self._get_llm_summary_sync, trigger_time)
+            result = await self._get_llm_summary_async(trigger_time)
             
             return result
                 
         except Exception as e:
+            traceback.print_exc()
             logger.error(f"获取LLM总结失败: {e}")
             return {
                 'trade_date': trade_date if 'trade_date' in locals() else trigger_time[:10],
@@ -273,7 +274,7 @@ class PriceMarket(DataSourceBase):
                 'data_count': 0
             }
     
-    def _get_llm_summary_sync(self, trigger_time: str) -> dict:
+    async def _get_llm_summary_async(self, trigger_time: str) -> dict:
         """
         同步版本的LLM总结获取方法
         
@@ -359,23 +360,43 @@ class PriceMarket(DataSourceBase):
 请基于事实数据生成客观的市场描述报告：
 """
             
-            user_message = {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt}
-                ] + image_contents
-            }
-            
-            messages = [
-                {"role": "system", "content": "你是一位资深的金融市场分析师，专长于综合技术分析、资金流向分析和宏观市场判断。请基于多维度数据生成专业的市场分析报告。"},
-                user_message
-            ]
-            
-            response = asyncio.run(GLOBAL_VISION_LLM.a_run(
-                messages=messages,
-                temperature=0.3,
-                max_tokens=2000
-            ))
+            if cfg.vlm.get("api_key", None):
+                user_message = {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt}
+                    ] + image_contents
+                }
+                
+                messages = [
+                    {"role": "system", "content": "你是一位资深的金融市场分析师，专长于综合技术分析、资金流向分析和宏观市场判断。请基于多维度数据生成专业的市场分析报告。"},
+                    user_message
+                ]
+                
+                response = await GLOBAL_VISION_LLM.a_run(
+                    messages=messages,
+                    temperature=0.3,
+                    max_tokens=2000
+                )
+            else:
+                user_message = {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt}
+                    ]
+                }
+                
+                messages = [
+                    {"role": "system", "content": "你是一位资深的金融市场分析师，专长于综合技术分析、资金流向分析和宏观市场判断。请基于多维度数据生成专业的市场分析报告。"},
+                    user_message
+                ]
+                response = await GLOBAL_LLM.a_run(
+                    messages=messages,
+                    thinking=False,
+                    temperature=0.3,
+                    max_tokens=2000
+                )
+                
             
             if response and response.content:
                 return {
@@ -408,7 +429,7 @@ class PriceMarket(DataSourceBase):
             return {
                 'trade_date': trade_date if 'trade_date' in locals() else trigger_time[:10],
                 'raw_data': "数据获取失败",
-                'llm_summary': f"分析失败: {str(e)}",
+                'llm_summary': "",
                 'data_count': 0,
                 'kline_charts_base64': {}
             }
@@ -499,5 +520,5 @@ class PriceMarket(DataSourceBase):
 
 if __name__ == "__main__":
     price_market = PriceMarket()
-    df = asyncio.run(price_market.get_data("2025-01-03 10:00:00"))
-    print(df)
+    df = asyncio.run(price_market.get_data("2025-01-05 10:00:00"))
+    print(df['content'].values[0])

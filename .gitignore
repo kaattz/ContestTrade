@@ -207,7 +207,6 @@ marimo/_lsp/
 __marimo__/
 
 # PROJECT
-contest_trade/config/config.yaml
 contest_trade/factors/factor_datas
 contest_trade/utils/tushare_cache
 contest_trade/factors/builder

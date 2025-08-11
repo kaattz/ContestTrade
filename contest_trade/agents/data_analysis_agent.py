@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from dataclasses import field
 from pathlib import Path
 from utils.llm_utils import count_tokens
-from models.llm_model import GLOBAL_LLM, GLOBAL_THINKING_LLM
+from models.llm_model import GLOBAL_LLM
 from langchain_core.runnables import RunnableConfig
 from config.config import PROJECT_ROOT, cfg
 from agents.prompts import prompt_for_data_analysis_summary_doc, prompt_for_data_analysis_filter_doc, prompt_for_data_analysis_merge_summary
@@ -326,7 +326,8 @@ class DataAnalysisAgent:
                 )
             
                 messages = [{"role": "user", "content": prompt}]
-                response = await GLOBAL_THINKING_LLM.a_run(messages, thinking=False, verbose=False, max_tokens=self.config.final_target_tokens)
+                response = await GLOBAL_LLM.a_run(
+                        messages, thinking=False, verbose=False, max_tokens=self.config.final_target_tokens)
                 final_summary = response.content.strip()
             
             # Collect all references from batch summaries and final summary

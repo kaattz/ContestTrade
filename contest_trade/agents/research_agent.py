@@ -304,7 +304,10 @@ class ResearchAgent:
                 output_language=self.config.output_language,
             )
             messages = [{"role": "user", "content": prompt}]
-            result_result = await GLOBAL_THINKING_LLM.a_run(messages, verbose=False, thinking=True, max_retries=10)
+            if cfg.llm_thinking.get("api_key", None):
+                result_result = await GLOBAL_THINKING_LLM.a_run(messages, verbose=False, thinking=True, max_retries=5)
+            else:
+                result_result = await GLOBAL_LLM.a_run(messages, verbose=False, thinking=False, max_retries=5)
             state["final_result"] = result_result.content
             state["final_result_thinking"] = result_result.reasoning_content
             
