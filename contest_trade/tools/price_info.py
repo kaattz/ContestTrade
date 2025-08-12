@@ -12,15 +12,19 @@ from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 from datetime import datetime, timedelta
 from utils.market_manager import GLOBAL_MARKET_MANAGER
+from tools.tool_utils import smart_tool
 
 
 class PriceInfoInput(BaseModel):
     market: str = Field(description="The market of the company.")
     symbol: str = Field(description="The symbol of the company. Only one symbol is allowed.")
     trigger_time: str = Field(description="The trigger time of the financial data. Format: YYYY-MM-DD HH:MM:SS.")
-@tool(
+
+@smart_tool(
     description="Get the price information of a symbol.",
-    args_schema=PriceInfoInput
+    args_schema=PriceInfoInput,
+    max_output_len=2000,
+    timeout_seconds=3.0
 )
 async def price_info(market: str, symbol: str, trigger_time: str=None) -> str:
     triggle_date = trigger_time.split(" ")[0].replace("-", "")

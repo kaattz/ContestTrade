@@ -11,6 +11,7 @@ sys.path.append(str(Path(__file__).parent.parent.resolve()))
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 from utils.market_manager import GLOBAL_MARKET_MANAGER
+from tools.tool_utils import smart_tool
 
 class StockSymbolSearchInput(BaseModel):
     market: str = Field(description="The target market. e.g., CN-Stock, US-Stock, HK-Stock, CN-ETF")
@@ -79,9 +80,11 @@ def search_single_query(symbols_df: pd.DataFrame, query: str, limit: int, match_
     else:
         return results[:limit]
 
-@tool(
+@smart_tool(
     description="Search for stock symbols by company names or partial symbols in batch mode.",
-    args_schema=StockSymbolSearchInput
+    args_schema=StockSymbolSearchInput,
+    max_output_len=4000,
+    timeout_seconds=3.0
 )
 async def stock_symbol_search(
     market: str, 

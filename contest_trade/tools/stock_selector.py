@@ -9,10 +9,12 @@ import pandas as pd
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool
 
+from tools.tool_utils import smart_tool
 from utils.tushare_utils import pro_cached
 from utils.date_utils import get_previous_trading_date
 from tools.tool_prompts import STOCK_FILTER_PROMPT
 from models.llm_model import GLOBAL_LLM
+
 
 
 def get_basic_stock_df(trggler_time: str):
@@ -34,6 +36,7 @@ def get_basic_stock_df(trggler_time: str):
         }
     )
     df2 = df2[~(df2['name'].str.contains('ST'))]
+    df2 = df2[~(df2['ts_code'].str.contains('.BJ'))]
     df = pd.merge(df2, df1, on='ts_code', how='left')
     return df
 
@@ -43,7 +46,7 @@ class StockSelectorInput(BaseModel):
     trigger_time: str = Field(description="触发时间，格式：YYYY-MM-DD HH:MM:SS")
     limit: int = Field(default=10, description="返回结果数量，默认10个, 最多20个。")
 
-@tool(
+@smart_tool(
     description="""
     选股工具，基于自然语言查询筛选A股股票，支持通过财务指标等组合筛选股票。不可用于查询具体股票信息。
     例如
@@ -71,7 +74,9 @@ class StockSelectorInput(BaseModel):
     total_mv           float    总市值（万元）        470332.97
     circ_mv            float    流通市值（万元）      432333.64
     """,
-    args_schema=StockSelectorInput
+    args_schema=StockSelectorInput,
+    max_output_len=2000,
+    timeout_seconds=30.0
 )
 async def stock_selector(market: str, query: str, trigger_time: str, limit: int = 10) -> str:
     try:

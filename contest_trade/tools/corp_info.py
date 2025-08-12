@@ -14,15 +14,18 @@ from utils.tushare_utils import tushare_cached
 from tools.tool_prompts import FINANCIAL_TOOL_SELECT_PROMPT
 from tools.tool_utils import ToolManager, ToolManagerConfig
 from utils.finnhub_utils import finnhub_cached
+from tools.tool_utils import smart_tool
 
 class CompanyFinancialInput(BaseModel):
     market: str = Field(description="The market of the company.")
     symbol: str = Field(description="The symbol of the company.")
     task: str = Field(description="The query of the financial data.")
     trigger_time: str = Field(description="The trigger time of the financial data. Format: YYYY-MM-DD HH:MM:SS.")
-@tool(
+@smart_tool(
     description="Get the financial information of a company",
-    args_schema=CompanyFinancialInput
+    args_schema=CompanyFinancialInput,
+    max_output_len=4000,
+    timeout_seconds=30.0
 )
 async def company_financial_info(market: str, symbol: str, task: str, trigger_time: str=None) -> str:
     tools_config = ToolManagerConfig(tool_paths=[

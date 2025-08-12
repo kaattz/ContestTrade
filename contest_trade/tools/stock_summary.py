@@ -10,6 +10,7 @@ from utils.fmp_utils import CachedFMPClient
 from models.llm_model import GLOBAL_VISION_LLM
 from tools.search_web import search_web
 from utils.stock_data_provider import get_all_stock_data
+from tools.tool_utils import smart_tool
 
 # --- Tool Setup ---
 TOOL_HOME = Path(__file__).parent.resolve()
@@ -146,9 +147,11 @@ async def analyze_stock_basic_info(market, symbol, stock_name, trigger_time):
         return f'LLM分析失败: {e}'
 
 # --- Tool Definition ---
-@tool(
+@smart_tool(
     description="Get stock summerized info.股票基本信息综合分析工具。输入市场、股票代码、触发时间，返回多维度数据总结结果。股票代码格式：A股使用600519.SH格式，美股使用AAPL格式。所有图片仅在内存生成并base64传递，不保存任何中间文件。终端只输出分析状态和最终结果。分析维度包括：1. 分时走势分析 2. K线技术分析 3. 财务基本面分析 4. 所在板块资金流向 5. 个股资金流向（近三日） 6. 技术面因子分析 7. 相关新闻与事件",
-    args_schema=StockSummaryInput
+    args_schema=StockSummaryInput,
+    max_output_len=4000,
+    timeout_seconds=120.0
 )
 async def stock_summary(market: str, symbol: str, trigger_time: str) -> str:
     """New version of the stock summary tool with refactored logic."""

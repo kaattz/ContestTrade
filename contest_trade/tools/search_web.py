@@ -14,6 +14,7 @@ from langchain_core.tools import tool
 from loguru import logger
 import json
 from config.config import cfg
+from tools.tool_utils import smart_tool
 
 
 sys.path.append(str(Path(__file__).parent.parent.resolve()))
@@ -143,9 +144,11 @@ class SearchWebInput(BaseModel):
     trigger_time: str = Field(description="The trigger time of the search. Format: YYYY-MM-DD HH:MM:SS.")
 
 
-@tool(
+@smart_tool(
     description="Searches information from the web based on a query and returns a list of results up to the specified limit.",
-    args_schema=SearchWebInput
+    args_schema=SearchWebInput,
+    max_output_len=2000,
+    timeout_seconds=10.0
 )
 async def search_web(query: str, topk: int = 3, trigger_time: str = None):
     """
