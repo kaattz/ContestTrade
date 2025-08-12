@@ -773,7 +773,7 @@ class MarketManager:
         if market_name != "CN-Stock":
             return {}
 
-        cache_path = Path(__file__).parent / 'tushare_cache' / 'namechange_cache' / 'namechange_data.json'
+        cache_path = Path(__file__).parent / 'cache' / 'market_manager' / 'namechange_data.json'
         
         if not cache_path.exists():
             raise FileNotFoundError(
@@ -791,5 +791,6 @@ GLOBAL_MARKET_MANAGER = MarketManager(GLOBAL_MARKET_CONFIG)
 
 if __name__ == "__main__":
     print(GLOBAL_MARKET_MANAGER.get_target_symbol_context("2025-01-01 09:00:00"))
+    print(GLOBAL_MARKET_MANAGER.get_total_namechange("CN-Stock"))
     pass
 
