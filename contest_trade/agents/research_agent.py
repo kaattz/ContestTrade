@@ -161,7 +161,7 @@ class ResearchAgent:
     async def _init_signal_dir(self, state: ResearchAgentState) -> ResearchAgentState:
         """try to load signal from file"""
         try:
-            signal_file = self.signal_dir / f'{state["trigger_time"].replace(" ", "_")}.json'
+            signal_file = self.signal_dir / f'{state["trigger_time"].replace(" ", "_").replace(":", "-")}.json'
             if signal_file.exists():
                 with open(signal_file, 'r', encoding='utf-8') as f:
                     signal_data = json.load(f)
@@ -329,7 +329,7 @@ class ResearchAgent:
     async def _submit_result(self, state: ResearchAgentState) -> ResearchAgentState:
         """Write the result to a file"""
         try:
-            signal_file = self.signal_dir / f'{state["trigger_time"].replace(" ", "_")}.json'
+            signal_file = self.signal_dir / f'{state["trigger_time"].replace(" ", "_").replace(":", "-")}.json'
             with open(signal_file, 'w', encoding='utf-8') as f:
                 json.dump(state["result"].to_dict(), f, ensure_ascii=False, indent=4)
             print(f"Research result saved to {signal_file}")

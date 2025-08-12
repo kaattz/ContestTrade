@@ -73,7 +73,7 @@ class DataAnalysisAgentConfig:
         content_cutoff_length: int = 2000,
         max_llm_context: int = 28000,
         llm_call_num: int = 2,
-        final_target_tokens: int = 4000, # DEBUG
+        final_target_tokens: int = 4000, 
         bias_goal: str = None,
     ):
         self.agent_name = agent_name
@@ -89,7 +89,6 @@ class DataAnalysisAgentConfig:
         self.batch_count = self.credits_per_batch // self.llm_call_num + 1
         self.title_selection_per_batch = self.max_llm_context // self.content_cutoff_length
         self.summary_target_tokens = self.max_llm_context // self.batch_count
-        #self.summary_target_tokens = 1000 # DEBUG
 
 
 class DataAnalysisAgentState(TypedDict):
@@ -182,7 +181,7 @@ class DataAnalysisAgent:
     async def _init_factor_dir(self, state: DataAnalysisAgentState) -> DataAnalysisAgentState:
         """try to load factor from file"""
         try:
-            factor_file = self.factor_dir / f'{state["trigger_time"].replace(" ", "_")}.json'
+            factor_file = self.factor_dir / f'{state["trigger_time"].replace(" ", "_").replace(":", "-")}.json'
             if factor_file.exists():
                 with open(factor_file, 'r', encoding='utf-8') as f:
                     factor_data = json.load(f)
@@ -535,7 +534,7 @@ class DataAnalysisAgent:
     async def _submit_result(self, state: DataAnalysisAgentState) -> DataAnalysisAgentState:
         """Write the result to a file"""
         try:
-            factor_file = self.factor_dir / f'{state["trigger_time"].replace(" ", "_")}.json'
+            factor_file = self.factor_dir / f'{state["trigger_time"].replace(" ", "_").replace(":", "-")}.json'
             with open(factor_file, 'w', encoding='utf-8') as f:
                 json.dump(state["result"].to_dict(), f, ensure_ascii=False, indent=4)
             print(f"Data analysis result saved to {factor_file}")
