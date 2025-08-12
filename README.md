@@ -23,7 +23,7 @@
 
 数据团队负责处理海量市场数据，并将其提炼成高密度的文本因子组合。随后，研究团队的智能体们会利用一套强大的专业金融工具集（如股票筛选、财务数据分析、网页搜索等），对这些因子进行多路径的深度研究，并生成交易决策。
 
-于此同时，系统会根据真实的市场反馈对所有智能体的表现进行实时评估和排名。最终，只有表现最佳的智能体所产生的决策才会被采纳。这种竞争和优胜劣汰的机制，使得系统能够自适应地调整资源分配，显著增强决策的稳健性和可靠性，从而实现更优异的交易结果。
+在所有Agent分析结束后，系统会根据真实的市场反馈对所有智能体的表现进行实时评估和排名。最终，只有表现最佳的智能体所产生的决策才会被采纳。这种竞争和优胜劣汰的机制，使得系统能够自适应地调整资源分配，显著增强决策的稳健性和可靠性，从而实现更优异的交易结果。
 
 ## Framework Overview (框架概览)
 
@@ -79,10 +79,24 @@ pip install -r requirements.txt
 python -m cli.main run
 ```
 
-程序启动后，您将进入终端交互式界面，可以根据提示选择触发时间后进入分析流程。
+程序启动后，您将进入终端交互式界面，可以根据提示输入分析时间。
+<p align="center">
+  <img src="assets/contest_trade_cli_start.jpg" style="width: 100%; height: auto;">
+</p>
 
-![CLI](assets/cli.jpg)
+所有Agent运行完成后可在结果摘要中查看Agent给出的信号。
+<p align="center">
+  <img src="assets/contest_trade_cli_main.jpg" style="width: 100%; height: auto;">
+</p>
 
+同时可以进一步选择查看详细的报告。
+<p align="center">
+  <img src="assets/contest_trade_cli_report.jpg" style="width: 100%; height: auto;">
+</p>
+
+<p align="center">
+  <img src="assets/contest_trade_cli_report_detail.jpeg" style="width: 100%; height: auto;">
+</p>
 
 
 ## 风险声明

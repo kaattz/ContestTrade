@@ -73,17 +73,30 @@ Edit the `config.yaml` file and enter your API keys. The table below lists all r
 
 ## Usage
 
-You can easily start ContestTrade via the command-line interface (CLI).
+You can easily start ContestTrade using the Command Line Interface (CLI).
 
 ```bash
 python -m cli.main run
 ```
 
-After the program starts, you will enter an interactive terminal interface. You can follow the prompts to select a trigger time and then proceed to the analysis process.
+After the program starts, you'll enter the interactive terminal interface and can input the analysis time as prompted.
+<p align="center">
+  <img src="assets/contest_trade_cli_start.jpg" style="width: 100%; height: auto;">
+</p>
 
-![CLI](assets/cli.jpg)
+After all agents have finished running, you can view the signals they provide in the results summary.
+<p align="center">
+  <img src="assets/contest_trade_cli_main.jpg" style="width: 100%; height: auto;">
+</p>
 
+You can also choose to view a more detailed report.
+<p align="center">
+  <img src="assets/contest_trade_cli_report.jpg" style="width: 100%; height: auto;">
+</p>
 
+<p align="center">
+  <img src="assets/contest_trade_cli_report_detail.jpeg" style="width: 100%; height: auto;">
+</p>
 
 ## Disclaimer
 
