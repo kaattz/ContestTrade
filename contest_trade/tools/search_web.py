@@ -12,7 +12,9 @@ from datetime import datetime, timedelta
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool
 from loguru import logger
+import json
 from config.config import cfg
+
 
 sys.path.append(str(Path(__file__).parent.parent.resolve()))
 
@@ -72,14 +74,17 @@ def ask_google(payload: dict, SERP_API_KEY: str) -> list:
     Performs a search using the SerpAPI (Google Search).
     API Key must be provided as an argument.
     """
-    SERP_URL = "https://serpapi.com/search"
+    SERP_URL = "https://google.serper.dev/search"
 
     try:
         start_date = payload.get("start_date")
         end_date = payload.get("end_date")
+        headers = {
+            "X-API-KEY": SERP_API_KEY,
+            'Content-Type': 'application/json'
+        }
         params = {
             "q": payload.get("query", ""),
-            "api_key": SERP_API_KEY, "engine": "google",
             "num": min(payload.get("topk", 3), 10), "gl": "cn", "hl": "zh-cn"
         }
 
@@ -88,20 +93,27 @@ def ask_google(payload: dict, SERP_API_KEY: str) -> list:
             end_formatted = f"{int(end_date[4:6])}/{int(end_date[6:8])}/{end_date[:4]}"
             params["tbs"] = f"cdr:1,cd_min:{start_formatted},cd_max:{end_formatted}"
 
-        response = requests.get(SERP_URL, params=params, timeout=5)
+        payload = json.dumps(params)
+        response = requests.request("POST", SERP_URL, headers=headers, data=payload)
         response.raise_for_status()
-
         data = response.json()
+
         standardized_results = []
-        for item in data.get("organic_results", [])[:params["num"]]:
+        organic_results = data.get("organic", [])
+        for item in organic_results[:params["num"]]:
             standardized_results.append({
-                "title": item.get("title", ""), "snippet": item.get("snippet", ""),
-                "url": item.get("link", ""), "time": item.get("date", "")
+                "title": item.get("title", ""), 
+                "snippet": item.get("snippet", ""),
+                "url": item.get("link", ""), 
+                "time": item.get("date", "")
             })
+        
+        print(standardized_results)
         return standardized_results
     except requests.exceptions.RequestException as e:
         logger.error(f"SerpAPI request failed: {e}")
         return []
+
 
 
 def build_search_result_context(results: list) -> str:
