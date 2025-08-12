@@ -19,12 +19,12 @@
 
 ##  Introduction
 
-*   **🏆 Internal Contest Mechanism:** This is the core innovation of the framework. The performance of all agents within the system is continuously scored and ranked. Only the outputs (whether data factors or trading signals) from the top-performing agents are adopted, enabling a merit-based system of elimination and continuous self-optimization.
-*   **👥 Two-Tiered Team Framework:** The system features a clear structural design that mimics professional investment firms.
-    *   **Data Team:** Responsible for processing vast amounts of market data and refining it into a diverse portfolio of high-density textual factors.
-    *   **Research Team:** Conducts parallel, multi-path deep research based on the effective factors provided by the Data Team to generate final trading decisions.
-*   **🛠️ Deep Research:** Research agents are equipped with a powerful suite of professional financial tools (such as stock screening, financial data analysis, web search, etc.), allowing them to autonomously plan and execute in-depth analysis, significantly enhancing the quality of trading signals.
-*   **🔌 Self-Adaptive Resource Allocation:** Through a contest mechanism based on real market feedback, the system adaptively adjusts the resource allocation between the Data and Research teams, effectively improving the overall quality, stability, and reliability of its decisions.
+This project aims to build a robust quantitative trading system powered by Large Language Models (LLMs).
+
+To address the challenge of LLMs' sensitivity to market noise, we've developed an innovative multi-agent system with an internal competition mechanism. The system features two teams—a Data Team that processes market data into high-density text factors, and a Research Team that uses powerful financial tools to conduct in-depth analysis.
+
+The core innovation is our self-adaptive competition mechanism, where agents in both teams are continuously ranked based on real-time market feedback. Only the decisions from the highest-performing "winners" are adopted. This approach significantly enhances the system's robustness and leads to superior trading performance.
+
 
 ## Framework Overview
 
