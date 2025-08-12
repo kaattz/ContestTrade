@@ -10,6 +10,7 @@ Current Core Function:
 """
 import sys
 from pathlib import Path
+import json
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 sys.path.append(str(PROJECT_ROOT))
@@ -768,27 +769,21 @@ class MarketManager:
         return stock_name2code, stock_code2name
 
     def get_total_namechange(self, market_name: str):
-        name2code = {}
-        if market_name == "CN-Stock":
-            stock_df = pro_cached.run(
-                func_name="stock_basic",
-                func_kwargs={
-                    "exchange": "SSE,SZSE,BJSE",
-                    "fields": 'ts_code,symbol,name,area,industry,list_date,list_status,fullname'
-                }
+
+        if market_name != "CN-Stock":
+            return {}
+
+        cache_path = Path(__file__).parent / 'cache' / 'market_manager' / 'namechange_data.json'
+        
+        if not cache_path.exists():
+            raise FileNotFoundError(
+                f"Required cache file not found: {cache_path}. "
+                "Please ensure the cache file exists."
             )
-            stock_list = stock_df['ts_code'].values.tolist()
-            for code in tqdm(stock_list):
-                df = pro_cached.run(
-                    func_name="namechange",
-                    func_kwargs={
-                        "ts_code": code,
-                        "fields": 'ts_code,name,start_date,end_date,change_reason'
-                    }
-                )
-                code_his_names = df['name'].values.tolist()
-                for name in code_his_names:
-                    name2code[name] = code
+        
+        with open(cache_path, 'r', encoding='utf-8') as f:
+            name2code = json.load(f)
+        
         return name2code
 
 GLOBAL_MARKET_CONFIG = MarketManagerConfig.from_config_file()
@@ -796,5 +791,6 @@ GLOBAL_MARKET_MANAGER = MarketManager(GLOBAL_MARKET_CONFIG)
 
 if __name__ == "__main__":
     print(GLOBAL_MARKET_MANAGER.get_target_symbol_context("2025-01-01 09:00:00"))
+    print(GLOBAL_MARKET_MANAGER.get_total_namechange("CN-Stock"))
     pass
 

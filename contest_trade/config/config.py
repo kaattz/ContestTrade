@@ -10,7 +10,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 class ProjectConfig:
 
     def __init__(self) -> None:
-        yaml_path = PROJECT_ROOT / "config" / "config.yaml"
+        yaml_path = PROJECT_ROOT.parent / "config.yaml"
 
         with open(yaml_path, "r", encoding="utf-8") as fr:
             config = yaml.load(fr, Loader=yaml.FullLoader)
@@ -20,10 +20,8 @@ class ProjectConfig:
 cfg = ProjectConfig()
 
 if __name__ == "__main__":
-    print(cfg.data_source)
     print(cfg.data_agents_config)
     print(cfg.research_agent_config)
-    print(cfg.research_agent_tools)
     print(cfg.llm)
     print(cfg.llm_thinking)
     print(cfg.vlm)
