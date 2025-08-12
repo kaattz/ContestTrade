@@ -13,7 +13,8 @@
 ---
 # ContestTrade: A Multi-Agent Trading System Based on Internal Contest Mechanism
 
-**ContestTrade** 是一个创新的多智能体（Multi-Agent）交易框架，我们通过引入独特的内部竞赛机制，模拟了现实投资公司的团队协作与内部竞争，从而在动态变化的市场环境中保持决策的鲁棒性并实现卓越的交易表现。
+**ContestTrade** 是一个创新的多智能体（Multi-Agent）交易框架，通过**ContestTrade** 您可以轻松的打造一支专属的AI交易团队。只需设定分析时刻，它能自主扫描全市场，从海量数据中挖掘潜在的投资机会，并通过内部优选机制，为您构建最值得信赖的投资组合。
+
 
 > **注意:** 目前框架仅支持 **中国A股** 市场。
 

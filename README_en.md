@@ -13,7 +13,7 @@
 ---
 # ContestTrade: A Multi-Agent Trading System Based on an Internal Contest Mechanism
 
-**ContestTrade** is an innovative multi-agent trading framework that introduces a unique internal contest mechanism. By simulating the teamwork and internal competition found in real-world investment firms, it maintains robust decision-making and achieves superior trading performance in dynamic market environments.
+**ContestTrade** is an innovative multi-agent trading framework that allows you to easily build your own exclusive AI trading team. Simply set the analysis time, and it will autonomously scan the entire market, unearthing potential investment opportunities from massive amounts of data. Through its internal optimization mechanism, it constructs the most reliable A-share investment portfolio for you.
 
 > **Note:** This framework currently only supports the **Chinese A-share** market.
 
