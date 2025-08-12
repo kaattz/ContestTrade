@@ -57,7 +57,7 @@ pip install -r requirements.txt
 
 Before running ContestTrade, you need to configure the necessary API keys and LLM parameters.
 
-Edit the `trade_agent/config/config.yaml` file and enter your API keys. The table below lists all required and optional keys:
+Edit the `config.yaml` file and enter your API keys. The table below lists all required and optional keys:
 
 | Key                      | Description                                | Required |
 | :----------------------- | :----------------------------------------- | :------- |

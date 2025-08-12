@@ -57,7 +57,7 @@ pip install -r requirements.txt
 
 在运行ContestTrade之前，您需要配置必要的API密钥和LLM参数。
 
-编辑 `trade_agent\config\config.yaml` 文件，填入您的API密钥。下表列出了所有必需和可选的密钥：
+编辑 `config.yaml` 文件，填入您的API密钥。下表列出了所有必需和可选的密钥：
 
 | Key | Description | Required |
 | :--- | :--- | :--- |
