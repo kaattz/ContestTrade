@@ -79,10 +79,24 @@ pip install -r requirements.txt
 python -m cli.main run
 ```
 
-程序启动后，您将进入终端交互式界面，可以根据提示选择触发时间后进入分析流程。
+程序启动后，您将进入终端交互式界面，可以根据提示进行后续操作。
+<p align="center">
+  <img src="assets/contest_trade_cli_start.jpg" style="width: 100%; height: auto;">
+</p>
 
-![CLI](assets/cli.jpg)
+所有Agent运行完成后可在结果摘要中查看Agent给出的信号。
+<p align="center">
+  <img src="assets/contest_trade_cli_main.jpg" style="width: 100%; height: auto;">
+</p>
 
+同时可以进一步选择查看详细的报告。
+<p align="center">
+  <img src="assets/contest_trade_cli_report.jpg" style="width: 100%; height: auto;">
+</p>
+
+<p align="center">
+  <img src="assets/contest_trade_cli_report_detail.jpeg" style="width: 100%; height: auto;">
+</p>
 
 
 ## 风险声明
