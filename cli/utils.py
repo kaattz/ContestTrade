@@ -4,7 +4,6 @@ from datetime import datetime
 import re
 from rich.console import Console
 
-from .models import AgentType, AgentStatus
 
 console = Console()
 
@@ -82,7 +81,7 @@ def validate_config() -> bool:
 
 
 def format_agent_name(agent_type: str, agent_id: int, agent_name: str) -> str:
-    """格式化代理名称"""
+    """格式化Agent名称"""
     if agent_type == "data":
         return f"📊 Data Agent {agent_id} ({agent_name})"
     elif agent_type == "research":
