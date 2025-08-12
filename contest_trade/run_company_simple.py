@@ -38,7 +38,7 @@ class SimpleTradeCompany:
             custom_config = DataAnalysisAgentConfig(
                 source_list=agent_config["data_source_list"],
                 agent_name=agent_config["agent_name"],
-                final_target_tokens=agent_config.get("final_target_tokens", 100),
+                final_target_tokens=agent_config.get("final_target_tokens", 4000),
                 bias_goal=agent_config.get("bias_goal", ""),
             )
             self.data_agents[agent_config_idx] = DataAnalysisAgent(custom_config)

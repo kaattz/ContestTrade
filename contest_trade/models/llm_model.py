@@ -355,19 +355,27 @@ GLOBAL_LLM_CONFIG = LLMModelConfig(
 )
 GLOBAL_LLM = LLMModel(GLOBAL_LLM_CONFIG)
 
-GLOBAL_THINKING_LLM_CONFIG = LLMModelConfig(
-    model_name=cfg.llm_thinking["model_name"],
-    api_key=cfg.llm_thinking["api_key"],
-    base_url=cfg.llm_thinking["base_url"]
-)
-GLOBAL_THINKING_LLM = LLMModel(GLOBAL_THINKING_LLM_CONFIG)
+try:
+    GLOBAL_THINKING_LLM_CONFIG = LLMModelConfig(
+        model_name=cfg.llm_thinking["model_name"],
+        api_key=cfg.llm_thinking["api_key"],
+        base_url=cfg.llm_thinking["base_url"]
+    )
+    GLOBAL_THINKING_LLM = LLMModel(GLOBAL_THINKING_LLM_CONFIG)
+except Exception as e:
+    print(f"加载thinking模型失败，使用llm模型替代: {e}")
+    GLOBAL_THINKING_LLM = GLOBAL_LLM
 
-GLOBAL_VLM_CONFIG = LLMModelConfig(
-    model_name=cfg.vlm["model_name"],
-    api_key=cfg.vlm["api_key"],
-    base_url=cfg.vlm["base_url"]
-)
-GLOBAL_VISION_LLM = LLMModel(GLOBAL_VLM_CONFIG)
+try:
+    GLOBAL_VLM_CONFIG = LLMModelConfig(
+        model_name=cfg.vlm["model_name"],
+        api_key=cfg.vlm["api_key"],
+        base_url=cfg.vlm["base_url"]
+    )
+    GLOBAL_VISION_LLM = LLMModel(GLOBAL_VLM_CONFIG)
+except Exception as e:
+    print(f"加载vlm模型失败，vision能力不可用: {e}")
+    GLOBAL_VISION_LLM = None
 
 if __name__ == "__main__":
     pass
