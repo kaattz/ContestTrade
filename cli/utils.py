@@ -22,7 +22,6 @@ def get_trigger_time() -> str:
     options = [
         f"现在 ({now.strftime('%Y-%m-%d %H:%M:%S')})",
         f"今天盘前 ({now.strftime('%Y-%m-%d')} 09:00:00)",
-        f"昨天收盘 ({now.strftime('%Y-%m-%d')} 15:00:00)",
         "自定义时间",
     ]
     
@@ -40,9 +39,7 @@ def get_trigger_time() -> str:
         return now.strftime('%Y-%m-%d %H:%M:%S')
     elif choice == options[1]:  # 今天盘前
         return f"{now.strftime('%Y-%m-%d')} 09:00:00"
-    elif choice == options[2]:  # 昨天收盘
-        return f"{now.strftime('%Y-%m-%d')} 15:00:00"
-    else:  # 自定义时间
+    elif choice == options[2]:  # 自定义时间
         trigger_time = questionary.text(
             "请输入自定义触发时间 (YYYY-MM-DD HH:MM:SS):",
             default=now.strftime('%Y-%m-%d %H:%M:%S'),
