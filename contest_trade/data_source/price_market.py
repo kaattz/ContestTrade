@@ -11,6 +11,7 @@ from utils.tushare_provider import TushareDataProvider
 from models.llm_model import GLOBAL_LLM, GLOBAL_VISION_LLM
 from loguru import logger
 from config.config import cfg
+from utils.date_utils import get_previous_trading_date
 
 class PriceMarket(DataSourceBase):
     def __init__(self):
@@ -22,10 +23,10 @@ class PriceMarket(DataSourceBase):
             if df is not None:
                 return df
             
-            trade_date = datetime.strptime(trigger_time, "%Y-%m-%d %H:%M:%S").strftime("%Y%m%d")            
+            trade_date = get_previous_trading_date(trigger_time)     
             logger.info(f"获取 {trade_date} 的价格市场数据")
 
-            llm_summary_dict = await self.get_llm_summary(trigger_time)
+            llm_summary_dict = await self.get_llm_summary(trade_date)
             data = [{
                 "title": f"{trade_date}:市场宏观数据汇总",
                 "content": llm_summary_dict["llm_summary"],
@@ -35,85 +36,6 @@ class PriceMarket(DataSourceBase):
             df = pd.DataFrame(data)
             self.save_data_cached(trigger_time, df)
             return df
-                
-        except Exception as e:
-            logger.error(f"获取价格市场数据失败: {e}")
-            return pd.DataFrame()
-    
-    def _get_data_sync(self, trigger_time: str) -> pd.DataFrame:
-        try:
-            trade_date = datetime.strptime(trigger_time, "%Y-%m-%d %H:%M:%S").strftime("%Y%m%d")
-            
-            logger.info(f"获取 {trade_date} 的价格市场数据")
-                    
-            data_dict = {}
-            
-            kline_data = TushareDataProvider.get_kline_data(trade_date)
-            if kline_data:  
-                kline_records = []
-                for stock_code, index_data in kline_data.items():
-                    for item in index_data['data']:
-                        record = {
-                            'stock_code': stock_code,
-                            'stock_name': index_data['name'],
-                            'trade_date': item['trade_date'],
-                            'open_price': item['open_price'],
-                            'high_price': item['high_price'],
-                            'low_price': item['low_price'],
-                            'close_price': item['close_price'],
-                            'price_change': item['price_change'],
-                            'price_change_rate': item['price_change_rate'],
-                            'trade_amount': item['trade_amount'],
-                            'trade_lots': item['trade_lots'],
-                            'data_type': 'kline'
-                        }
-                        kline_records.append(record)
-                
-                if kline_records:
-                    kline_df = pd.DataFrame(kline_records)
-                    data_dict['kline'] = kline_df
-                    logger.info(f"获取K线数据: {len(kline_df)} 条记录")
-            
-            current_day_data = TushareDataProvider.get_current_day_kline_data(trade_date)
-            if current_day_data:
-                current_records = []
-                for stock_code, index_data in current_day_data.items():
-                    record = {
-                        'stock_code': stock_code,
-                        'stock_name': index_data['name'],
-                        'trade_date': index_data['trade_date'],
-                        'open_price': index_data['open_price'],
-                        'high_price': index_data['high_price'],
-                        'low_price': index_data['low_price'],
-                        'close_price': index_data['close_price'],
-                        'price_change': index_data['price_change'],
-                        'price_change_rate': index_data['price_change_rate'],
-                        'trade_amount': index_data['trade_amount'],
-                        'trade_lots': index_data['trade_lots'],
-                        'data_type': 'current_day'
-                    }
-                    current_records.append(record)
-                
-                if current_records:
-                    current_df = pd.DataFrame(current_records)
-                    data_dict['current_day'] = current_df
-                    logger.info(f"获取当日数据: {len(current_df)} 条记录")
-            
-            if data_dict:
-                all_data = []
-                for data_type, df in data_dict.items():
-                    all_data.append(df)
-                
-                combined_df = pd.concat(all_data, ignore_index=True)
-                combined_df['trigger_time'] = trigger_time
-                
-                total_records = len(combined_df)
-                logger.info(f"价格市场数据获取完成，总计 {total_records} 条记录")
-                
-                return combined_df
-            else:
-                logger.warning(f"{trade_date} 无价格市场数据")
-                return pd.DataFrame()
                 
         except Exception as e:
             logger.error(f"获取价格市场数据失败: {e}")
@@ -254,13 +176,11 @@ class PriceMarket(DataSourceBase):
             logger.error(f"生成K线图失败: {e}")
             return {}
     
-    async def get_llm_summary(self, trigger_time: str) -> dict:
+    async def get_llm_summary(self, trade_date: str) -> dict:
         try:
-            trade_date = datetime.strptime(trigger_time, "%Y-%m-%d %H:%M:%S").strftime("%Y%m%d")
-            
             logger.info(f"获取 {trade_date} 的价格市场LLM分析总结")
             
-            result = await self._get_llm_summary_async(trigger_time)
+            result = await self._get_llm_summary_async(trade_date)
             
             return result
                 
@@ -268,25 +188,23 @@ class PriceMarket(DataSourceBase):
             traceback.print_exc()
             logger.error(f"获取LLM总结失败: {e}")
             return {
-                'trade_date': trade_date if 'trade_date' in locals() else trigger_time[:10],
+                'trade_date': trade_date,
                 'raw_data': "数据获取失败",
                 'llm_summary': f"分析失败: {str(e)}",
                 'data_count': 0
             }
     
-    async def _get_llm_summary_async(self, trigger_time: str) -> dict:
+    async def _get_llm_summary_async(self, trade_date: str) -> dict:
         """
         同步版本的LLM总结获取方法
         
         Args:
-            trigger_time: 触发时间，格式为'YYYY-MM-DD HH:MM:SS'
+            trade_date: 交易日期，格式为'YYYYMMDD'
             
         Returns:
             dict: 包含原始数据和LLM分析总结的字典
         """
         try:
-            trade_date = datetime.strptime(trigger_time, "%Y-%m-%d %H:%M:%S").strftime("%Y%m%d")
-            
             logger.info(f"获取 {trade_date} 的价格市场LLM分析总结")
             
             kline_data = TushareDataProvider.get_kline_data(trade_date)
@@ -313,10 +231,6 @@ class PriceMarket(DataSourceBase):
                     'data_count': 0,
                     'kline_charts_base64': {}
                 }
-            
-            data_summary = self._construct_comprehensive_data_summary(
-                kline_data, current_day_data, sector_summary, trade_date
-            )
             
             image_contents = []
             for stock_code, chart_info in kline_charts_base64.items():
@@ -401,7 +315,7 @@ class PriceMarket(DataSourceBase):
             if response and response.content:
                 return {
                     'trade_date': trade_date,
-                    'raw_data': data_summary,
+                    'raw_data': prompt,
                     'llm_summary': response.content,
                     'data_count': available_sources,
                     'data_sources': {
@@ -413,7 +327,7 @@ class PriceMarket(DataSourceBase):
             else:
                 return {
                     'trade_date': trade_date,
-                    'raw_data': data_summary,
+                    'raw_data': prompt,
                     'llm_summary': "LLM分析失败",
                     'data_count': available_sources,
                     'kline_charts_base64': kline_charts_base64,
@@ -427,29 +341,13 @@ class PriceMarket(DataSourceBase):
         except Exception as e:
             logger.error(f"获取LLM总结失败: {e}")
             return {
-                'trade_date': trade_date if 'trade_date' in locals() else trigger_time[:10],
+                'trade_date': trade_date,
                 'raw_data': "数据获取失败",
                 'llm_summary': "",
                 'data_count': 0,
                 'kline_charts_base64': {}
             }
     
-    def _construct_comprehensive_data_summary(self, kline_data: dict, current_day_data: dict, 
-                                            sector_summary: str, trade_date: str) -> str:
-        summary_parts = []
-        
-        # 1. 三大指数当日收盘情况
-        if current_day_data:
-            summary_parts.append(self._format_current_day_data(current_day_data, trade_date))
-        
-        # 2. 板块资金流向
-        if sector_summary and "无数据" not in sector_summary:
-            summary_parts.append(sector_summary)
-        
-        if summary_parts:
-            return "\n\n".join(summary_parts)
-        else:
-            return f"{trade_date} 无有效数据"
     
     def _format_current_day_data(self, current_day_data: dict, trade_date: str) -> str:
         if not current_day_data:
@@ -474,51 +372,7 @@ class PriceMarket(DataSourceBase):
         
         return f"{trade_date}三大指数收盘情况：\n\n" + "\n\n".join(descriptions)
     
-    async def get_llm_summary_with_custom_prompt(self, trigger_time: str, custom_prompt: str = None) -> dict:
-        try:
-            base_result = await self.get_llm_summary(trigger_time)
-            
-            if base_result.get('data_count', 0) == 0:
-                return base_result
-            
-            if custom_prompt:
-                trade_date = datetime.strptime(trigger_time, "%Y-%m-%d %H:%M:%S").strftime("%Y%m%d")
-                
-                prompt = f"""
-{custom_prompt}
-
-{trade_date}的价格市场数据：
-
-{base_result['raw_data']}
-"""
-                
-                messages = [
-                    {"role": "system", "content": "你是一位资深的金融市场分析师，专长于综合技术分析、资金流向分析和宏观市场判断。请基于多维度数据生成专业的市场分析报告。"},
-                    {"role": "user", "content": prompt}
-                ]
-                
-                response = await GLOBAL_LLM.a_run(
-                    messages=messages,
-                    temperature=0.3,
-                    max_tokens=2000
-                )
-                
-                if response and response.content:
-                    base_result['llm_summary'] = response.content
-                    base_result['custom_prompt_used'] = True
-                
-            return base_result
-                
-        except Exception as e:
-            logger.error(f"获取自定义LLM总结失败: {e}")
-            return {
-                'trade_date': trigger_time[:10],
-                'raw_data': "数据获取失败",
-                'llm_summary': f"分析失败: {str(e)}",
-                'data_count': 0
-            }
-
 if __name__ == "__main__":
     price_market = PriceMarket()
-    df = asyncio.run(price_market.get_data("2025-01-05 10:00:00"))
-    print(df['content'].values[0])
+    df = asyncio.run(price_market.get_data("2025-08-12 14:00:00"))
+    print(df.content.values[0])
