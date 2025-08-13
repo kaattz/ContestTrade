@@ -309,7 +309,7 @@ class ContestTradeDisplay:
             footer_title = "🏆 结果摘要"
         else:
             footer_text = Text()
-            footer_text.append("🔄 分析进行中...", style="bold yellow")
+            footer_text.append("🔄 分析进行中...预计等待10分钟...", style="bold yellow")
             if self.analysis_completed:
                 footer_text.append("\n✅ 分析完成！请按回车键(↵)退出运行界面...", style="bold green")
             footer_title = "📊 状态信息"
@@ -495,8 +495,8 @@ async def run_with_events_capture(company, trigger_time: str, display: ContestTr
                 log_msg = f"[{datetime.now().strftime('%H:%M:%S')}] {event_type}: {event_name}\n"
                 with open(display.log_file, "a", encoding="utf-8") as f:
                     f.write(log_msg)
-                # 同时显示到界面事件流
-                display.add_message("事件", f"{event_type}: {event_name}")
+                # # 同时显示到界面事件流
+                # display.add_message("事件", f"{event_type}: {event_name}")
             
             # 记录自定义事件到日志和界面
             if event_type == "on_custom":
