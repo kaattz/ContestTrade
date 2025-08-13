@@ -74,11 +74,9 @@ class FinalReportGenerator:
                 symbol_code = signal.get('symbol_code', 'N/A')
                 action = signal.get('action', 'N/A')
                 agent_id = signal.get('agent_id', 'N/A')
-                probability = signal.get('probability', 'N/A')
                 
                 report_content += f"#### {i}. {symbol_name} ({symbol_code})\n\n"
                 report_content += f"- **投资动作**: {action}\n"
-                report_content += f"- **概率评估**: {probability}\n"
                 report_content += f"- **分析来源**: Research Agent {agent_id}\n"
                 
                 # 证据详情
@@ -109,9 +107,8 @@ class FinalReportGenerator:
             report_content += "以下信号经分析后认为不具备投资机会：\n\n"
             
             for i, signal in enumerate(invalid_signals, 1):
-                symbol_name = signal.get('symbol_name', 'N/A')
                 agent_id = signal.get('agent_id', 'N/A')
-                report_content += f"{i}. **{symbol_name}** (Research Agent {agent_id}) - 无明确投资机会\n"
+                report_content += f"{i}. Research Agent {agent_id} - 无明确投资机会\n"
             
             report_content += "\n"
         
@@ -127,6 +124,39 @@ class FinalReportGenerator:
         
         return report_content
     
+    def display_terminal_interactive_report(self, markdown_content: str):
+        """显示可滚动的交互式终端报告（不保存文件）"""
+        
+        # 创建Rich控制台，启用可滚动功能
+        console = Console()
+        
+        # 创建Markdown对象
+        markdown = Markdown(markdown_content)
+        
+        # 创建面板
+        report_panel = Panel(
+            markdown,
+            title="📋 ContestTrade 详细分析报告",
+            title_align="center",
+            border_style="blue",
+            padding=(1, 2),
+        )
+        
+        # 清屏并显示报告
+        console.clear()
+        console.print(report_panel)
+        
+        # 操作提示
+        console.print(f"\n[yellow]📖 报告查看说明:[/yellow]")
+        console.print(f"[dim]• 向上滚动查看报告开头内容[/dim]")
+        console.print(f"[dim]• 向下滚动查看更多详细信息[/dim]") 
+        console.print(f"[dim]• 按任意键返回主菜单[/dim]")
+        
+        try:
+            input()
+        except KeyboardInterrupt:
+            pass
+    
     def display_interactive_report(self, markdown_content: str, save_path: Path):
         """显示可滚动的交互式报告"""
         
@@ -136,7 +166,6 @@ class FinalReportGenerator:
         # 创建Markdown对象
         markdown = Markdown(markdown_content)
         
-        # 创建面板
         report_panel = Panel(
             markdown,
             title="📋 ContestTrade Final Report",
@@ -206,23 +235,15 @@ def generate_final_report(final_state: Dict, results_dir: Path) -> tuple[str, Pa
     # 创建报告生成器
     generator = FinalReportGenerator(final_state)
     
-    # 生成文件名 - 使用trigger_time而不是当前时间
+    # 生成文件名
     trigger_time = final_state.get('trigger_time', 'N/A')
     
     if trigger_time != 'N/A' and trigger_time is not None:
-        # 将时间格式转换为文件名安全的格式
         safe_time = trigger_time.replace(' ', '_').replace(':', '-')
-    else:
-        # 如果没有trigger_time，使用当前时间作为备用
-        safe_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     
     filename = f"final_report_{safe_time}.md"
     save_path = results_dir / filename
-    
-    # 确保目录存在
     results_dir.mkdir(parents=True, exist_ok=True)
-    
-    # 生成Markdown报告
     markdown_content = generator.generate_markdown_report(save_path)
     
     return markdown_content, save_path
@@ -230,11 +251,8 @@ def generate_final_report(final_state: Dict, results_dir: Path) -> tuple[str, Pa
 
 def display_final_report_interactive(final_state: Dict, results_dir: Path):
     """显示交互式最终报告"""
-    
-    # 生成报告
+
     markdown_content, save_path = generate_final_report(final_state, results_dir)
-    
-    # 创建生成器并显示
     generator = FinalReportGenerator(final_state)
     generator.display_interactive_report(markdown_content, save_path)
     

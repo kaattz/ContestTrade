@@ -95,7 +95,7 @@ python -m cli.main run
 </p>
 
 <p align="center">
-  <img src="assets/contest_trade_cli_report_detail.jpeg" style="width: 100%; height: auto;">
+  <img src="assets/contest_trade_cli_report_detail.jpg" style="width: 100%; height: auto;">
 </p>
 
 

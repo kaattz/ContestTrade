@@ -3,7 +3,6 @@ ContestTrade: 基于内部竞赛机制的Multi-Agent交易系统
 """
 import asyncio
 import sys
-import re
 import json
 from pathlib import Path
 from typing import Optional, Dict
@@ -33,7 +32,6 @@ app = typer.Typer(
     add_completion=True,
 )
 
-
 def _get_agent_config():
     """从配置文件动态获取代理配置"""
     agent_status = {}
@@ -59,18 +57,96 @@ class ContestTradeDisplay:
     """ContestTrade显示管理器"""
     
     def __init__(self):
-        self.messages = deque(maxlen=100)
+        self.messages = deque(maxlen=200)  # 增加消息队列容量
         self.agent_status = _get_agent_config()
         self.current_task = "初始化系统..."
         self.progress_info = ""
         self.final_state = None
         self.analysis_completed = False
         self.step_counts = {"data": 0, "research": 0, "contest": 0, "finalize": 0}
+        self._last_update_hash = None  # 用于检测内容是否真正发生变化
+        self._last_console_size = None  # 用于检测控制台大小变化
+        
+        # 日志监控相关
+        self.logs_dir = Path(PROJECT_ROOT) / "agents_workspace" / "logs"
+        self.logs_dir.mkdir(exist_ok=True)
+        
+    def create_log_file(self, trigger_time: str):
+        """创建本次运行的日志文件"""
+        timestamp = trigger_time.replace(":", "-").replace(" ", "_")
+        self.log_file = self.logs_dir / f"run_{timestamp}.log"
+        with open(self.log_file, "w", encoding="utf-8") as f:
+            f.write(f"ContestTrade Run Log - {trigger_time}\n")
+            f.write("=" * 50 + "\n")
+        
+    def check_agent_status_from_events_and_files(self, trigger_time: str):
+        """基于事件和文件系统更新agent状态"""
+        # 格式化时间戳用于文件匹配
+        timestamp_str = trigger_time.replace("-", "-").replace(":", "-").replace(" ", "_")
+        
+        # 检查factors目录（Data Analysis Agent结果）
+        factors_dir = Path(PROJECT_ROOT) / "agents_workspace" / "factors"
+        if factors_dir.exists():
+            for agent_name in self.agent_status:
+                if not agent_name.startswith("agent_"):  # Data agents
+                    agent_dir = factors_dir / agent_name
+                    if agent_dir.exists():
+                        # 查找对应时间戳的文件
+                        pattern = f"{timestamp_str}*.json"
+                        files = list(agent_dir.glob(pattern))
+                        if files and self.agent_status[agent_name] != "completed":
+                            self.update_agent_status(agent_name, "completed")
+                            self.add_message("Data Analysis Agent", f"✅ {agent_name} 完成数据分析")
+        
+        # 检查reports目录（Research Agent结果）
+        reports_dir = Path(PROJECT_ROOT) / "agents_workspace" / "reports"
+        if reports_dir.exists():
+            for agent_name in self.agent_status:
+                if agent_name.startswith("agent_"):  # Research agents
+                    agent_dir = reports_dir / agent_name
+                    if agent_dir.exists():
+                        # 查找对应时间戳的文件
+                        pattern = f"{timestamp_str}*.json"
+                        files = list(agent_dir.glob(pattern))
+                        if files and self.agent_status[agent_name] != "completed":
+                            self.update_agent_status(agent_name, "completed")
+                            self.add_message("Research Agent", f"✅ {agent_name} 完成研究分析")
+    
+    def start_data_agents(self):
+        """开始所有Data Analysis Agent"""
+        for agent_name in self.agent_status:
+            if not agent_name.startswith("agent_"):  # Data agents
+                self.update_agent_status(agent_name, "running")
+        self.add_message("系统", "🚀 开始运行所有Data Analysis Agent")
+    
+    def start_research_agents(self):
+        """开始所有Research Agent"""
+        for agent_name in self.agent_status:
+            if agent_name.startswith("agent_"):  # Research agents
+                self.update_agent_status(agent_name, "running")
+        self.add_message("系统", "🚀 开始运行所有Research Agent")
         
     def add_message(self, message_type: str, content: str):
         """添加消息"""
         timestamp = datetime.now().strftime("%H:%M:%S")
-        self.messages.append(f"[{timestamp}] {message_type}: {content}")
+        new_message = f"[{timestamp}] {message_type}: {content}"
+        self.messages.append(new_message)
+        
+    def should_update_display(self) -> bool:
+        """检查是否需要更新显示（内容是否发生变化）"""
+        current_hash = hash(str(self.messages) + self.current_task + self.progress_info + str(self.agent_status))
+        if current_hash != self._last_update_hash:
+            self._last_update_hash = current_hash
+            return True
+        return False
+    
+    def console_size_changed(self) -> bool:
+        """检查控制台大小是否发生变化"""
+        current_size = console.size
+        if current_size != self._last_console_size:
+            self._last_console_size = current_size
+            return True
+        return False
         
     def update_agent_status(self, agent_name: str, status: str):
         """更新Agent状态"""
@@ -94,21 +170,35 @@ class ContestTradeDisplay:
     def create_layout(self, trigger_time: str) -> Layout:
         """创建自适应布局"""
         layout = Layout()
+        
+        # 获取终端大小
+        console_size = console.size
+        
+        # 根据终端高度调整header大小
+        header_size = min(10, max(9, console_size.height // 6))
+        
         layout.split_column(
-            Layout(name="header", size=8),
+            Layout(name="header", size=header_size),
             Layout(name="main_content")
         )
+        
+        # 根据终端宽度调整左右面板比例
+        if console_size.width < 120:
+            left_ratio, right_ratio = 2, 3  # 窄屏时调整比例
+        else:
+            left_ratio, right_ratio = 3, 4  # 宽屏时的比例
+            
         layout["main_content"].split_row(
-            Layout(name="left_panel", ratio=3),
-            Layout(name="right_panel", ratio=4)
+            Layout(name="left_panel", ratio=left_ratio),
+            Layout(name="right_panel", ratio=right_ratio)
         )
         layout["left_panel"].split_column(
             Layout(name="status", ratio=3),
             Layout(name="progress", ratio=2)
         )
         layout["right_panel"].split_column(
-            Layout(name="content", ratio=7),
-            Layout(name="footer", ratio=4)
+            Layout(name="content", ratio=3),
+            Layout(name="footer", ratio=2)
         )
         
         return layout
@@ -134,7 +224,7 @@ class ContestTradeDisplay:
         # 更新Agent状态面板
         status_text = Text()
         
-        # 数据Agent状态
+        # Data Analysis Agent状态
         data_agents = {k: v for k, v in self.agent_status.items() if not k.startswith("agent_")}
         if data_agents:
             status_text.append("📊 Data Analysis Agent\n", style="bold cyan")
@@ -182,8 +272,8 @@ class ContestTradeDisplay:
         progress_text.append(f"\n📊 步骤统计:\n", style="bold blue")
         progress_text.append(f"  Data Analysis Agent事件: {self.step_counts['data']}\n")
         progress_text.append(f"  Research Agent事件: {self.step_counts['research']}\n")
-        progress_text.append(f"  竞赛事件: {self.step_counts['contest']}\n")
-        progress_text.append(f"  完成事件: {self.step_counts['finalize']}\n")
+        # progress_text.append(f"  竞赛事件: {self.step_counts['contest']}\n")
+        # progress_text.append(f"  完成事件: {self.step_counts['finalize']}\n")
         
         progress_panel = Panel(
             progress_text,
@@ -199,7 +289,7 @@ class ContestTradeDisplay:
         content_text.append("🔄 实时事件日志\n", style="bold blue")
         
         if self.messages:
-            for msg in list(self.messages)[-10:]:
+            for msg in list(self.messages)[-10:]:  # 显示最后10条消息
                 content_text.append(f"{msg}\n")
         else:
             content_text.append("  ⏳ 等待事件...\n")
@@ -255,7 +345,6 @@ class ContestTradeDisplay:
             # 筛选 has_opportunity 为 yes 的信号
             valid_signals = []
             for signal in best_signals:
-                # 检查 has_opportunity 字段
                 has_opportunity = signal.get('has_opportunity', 'no')
                 if has_opportunity == 'yes':
                     valid_signals.append(signal)
@@ -263,7 +352,6 @@ class ContestTradeDisplay:
             if valid_signals:
                 summary_text.append(f"🎯 有效信号: {len(valid_signals)}", style="bold red")
                 
-                # 显示有效信号及其对应的Agent
                 for i, signal in enumerate(valid_signals):
                     symbol_name = signal.get('symbol_name', 'N/A')
                     action = signal.get('action', 'N/A')
@@ -283,81 +371,17 @@ class ContestTradeDisplay:
         return summary_text
 
 
-def _process_stdout_message(stdout_content: str, display: ContestTradeDisplay):
-    """处理stdout消息来识别Agent状态变化"""
-    
-    lines = stdout_content.strip().split('\n')
-    for line in lines:
-        if not line.strip():
-            continue
-            
-        # 识别Data Analysis Agent开始运行
-        data_agent_start_match = re.search(r'🔍 开始运行Data Agent \d+ \((.+?)\)\.\.\.', line)
-        if data_agent_start_match:
-            agent_name = data_agent_start_match.group(1)
-            
-            # 映射到显示名称
-            display_agent = _map_agent_name_to_display(agent_name)
-            display.update_agent_status(display_agent, "running")
-            display.add_message("Data Analysis Agent", f"🔍 {agent_name} 开始运行")
-            continue
-            
-        # 识别Research Agent开始运行
-        research_agent_start_match = re.search(r'🔍 开始运行Research Agent \d+ \((.+?)\)\.\.\.', line)
-        if research_agent_start_match:
-            agent_name = research_agent_start_match.group(1)
-            display.update_agent_status(agent_name, "running")
-            display.add_message("Research Agent", f"🔍 {agent_name} 开始运行")
-            continue
-            
-        # 识别Data Analysis Agent完成
-        if "Data analysis result saved to" in line:
-            # 从路径中提取Agent名称
-            path_match = re.search(r'/factors/(.+?)/\d{4}-\d{2}-\d{2}_\d{2}:\d{2}:\d{2}\.json', line)
-            if path_match:
-                agent_name = path_match.group(1)
-                display_agent = _map_agent_name_to_display(agent_name)
-                display.update_agent_status(display_agent, "completed")
-                display.add_message("Data Analysis Agent", f"✅ {agent_name} 完成数据分析")
-            continue
-            
-        # 识别Research Agent完成
-        if "Research result saved to" in line:
-            # 从路径中提取Agent名称
-            path_match = re.search(r'/reports/(.+?)/\d{4}-\d{2}-\d{2}_\d{2}:\d{2}:\d{2}\.json', line)
-            if path_match:
-                agent_name = path_match.group(1)
-                display.update_agent_status(agent_name, "completed")
-                display.add_message("Research Agent", f"✅ {agent_name} 完成研究分析")
-            continue
-
-
-def _map_agent_name_to_display(agent_name: str) -> str:
-    """将真实的agent_name映射到显示名称"""
-    # 从配置中获取数据代理名称列表
-    data_agents_config = cfg.data_agents_config
-    data_agent_names = [agent_config.get('agent_name', '') for agent_config in data_agents_config]
-    
-    # 检查是否匹配配置中的数据代理名称
-    for config_agent_name in data_agent_names:
-        if config_agent_name and config_agent_name.lower() in agent_name.lower():
-            return config_agent_name
-    
-    # 如果没有匹配到配置中的名称，使用原名
-    return agent_name
-
-
 def run_contest_analysis_interactive(trigger_time: str):
     """在交互界面中运行竞赛分析"""
     try:
         # 创建显示管理器
         display = ContestTradeDisplay()
         
-        # 创建布局
+        # 创建初始布局
         layout = display.create_layout(trigger_time)
         
-        # 使用Live界面运行
-        with Live(layout, refresh_per_second=3, screen=True, auto_refresh=True, console=console) as live:
+        # 使用Live界面运行 - 提高刷新频率以更好响应窗口大小变化
+        with Live(layout, refresh_per_second=4, screen=True, auto_refresh=True, console=console) as live:
             # 初始显示
             display.update_display(layout, trigger_time)
             
@@ -386,15 +410,26 @@ def run_contest_analysis_interactive(trigger_time: str):
                 return None, display
             
             # 运行工作流并捕获输出
-            final_state = asyncio.run(run_with_events_capture(company, trigger_time, display, layout))
+            final_state = asyncio.run(run_with_events_capture(company, trigger_time, display, layout, live))
             
             # 运行结束后
             if final_state:
                 display.add_message("完成", "✅ 分析完成！")
-                display.set_current_task("分析完成，等待用户选择...")
+                display.set_current_task("分析完成，生成报告...")
                 display.set_analysis_completed(True)
                 display.final_state = final_state
                 display.update_display(layout, trigger_time)
+                
+                # 自动生成MD报告
+                try:
+                    results_dir = Path(PROJECT_ROOT) / "agents_workspace" / "results"
+                    from .static.report_template import generate_final_report
+                    markdown_content, report_path = generate_final_report(final_state, results_dir)
+                    display.add_message("报告", f"✅ MD报告已生成: {report_path.name}")
+                    display.update_display(layout, trigger_time)
+                except Exception as e:
+                    display.add_message("报告", f"⚠️ MD报告生成失败: {str(e)}")
+                    display.update_display(layout, trigger_time)
                 
                 # 等待用户手动退出
                 console.print("\n[green]✅ 分析完成！[/green]")
@@ -421,12 +456,32 @@ def run_contest_analysis_interactive(trigger_time: str):
     return final_state, display
 
 
-async def run_with_events_capture(company, trigger_time: str, display: ContestTradeDisplay, layout):
+async def run_with_events_capture(company, trigger_time: str, display: ContestTradeDisplay, layout, live):
     """运行公司工作流并捕获事件流"""
     try:
         display.add_message("开始", "🚀 开始运行工作流...")
         display.set_current_task("🔄 启动工作流...")
+        display.create_log_file(trigger_time)
         display.update_display(layout, trigger_time)
+        
+        # 启动定期检查文件状态的任务
+        async def periodic_status_check():
+            while not display.analysis_completed:
+                display.check_agent_status_from_events_and_files(trigger_time)
+                
+                # 检查控制台大小是否变化，如果变化则重新创建布局
+                if display.console_size_changed():
+                    new_layout = display.create_layout(trigger_time)
+                    # 将新布局的内容复制到当前布局中
+                    layout.update(new_layout)
+                    display.update_display(layout, trigger_time)
+                else:
+                    display.update_display(layout, trigger_time)
+                    
+                await asyncio.sleep(1)  # 每1秒检查一次，提高响应性
+        
+        # 启动状态检查任务
+        status_check_task = asyncio.create_task(periodic_status_check())
         
         # 运行公司工作流并处理事件
         final_state = None
@@ -435,73 +490,123 @@ async def run_with_events_capture(company, trigger_time: str, display: ContestTr
             event_type = event.get("event", "")
             event_data = event.get("data", {})
             
-            # 捕获stdout消息来识别Agent状态变化
+            # 记录重要事件到日志
+            if event_type in ["on_chain_start", "on_chain_end"]:
+                log_msg = f"[{datetime.now().strftime('%H:%M:%S')}] {event_type}: {event_name}\n"
+                with open(display.log_file, "a", encoding="utf-8") as f:
+                    f.write(log_msg)
+                # 同时显示到界面事件流
+                display.add_message("事件", f"{event_type}: {event_name}")
+            
+            # 记录自定义事件到日志和界面
+            if event_type == "on_custom":
+                custom_event_name = event_name
+                custom_data = event_data
+                log_msg = f"[{datetime.now().strftime('%H:%M:%S')}] CUSTOM: {custom_event_name} - {custom_data}\n"
+                with open(display.log_file, "a", encoding="utf-8") as f:
+                    f.write(log_msg)
+                # 显示到界面
+                display.add_message("自定义事件", f"{custom_event_name}")
+            
+            # 处理stdout输出（记录到日志和界面）
             if event_type == "on_stdout":
                 stdout_content = event_data.get("chunk", "")
-                _process_stdout_message(stdout_content, display)
-                continue
+                if stdout_content.strip():
+                    log_msg = f"[{datetime.now().strftime('%H:%M:%S')}] STDOUT: {stdout_content.strip()}\n"
+                    with open(display.log_file, "a", encoding="utf-8") as f:
+                        f.write(log_msg)
+                    # 显示所有stdout到界面
+                    display.add_message("输出", stdout_content.strip())
             
-            # 处理公司级别事件
-            if event_name in ["run_data_agents", "run_research_agents", "run_contest", "finalize"]:
-                if event_type == "on_chain_start":
-                    display.set_current_task(f"🔄 开始 {event_name}")
-                    if event_name == "run_data_agents":
-                        display.set_progress_info("数据收集阶段 1/4")
-                    elif event_name == "run_research_agents":
-                        display.set_progress_info("研究分析阶段 2/4")
-                    elif event_name == "run_contest":
-                        display.set_progress_info("竞赛评选阶段 3/4")
-                    elif event_name == "finalize":
-                        display.set_progress_info("结果生成阶段 4/4")
-                        
-                elif event_type == "on_chain_end":
-                    display.set_current_task(f"✅ 完成 {event_name}")
-                    if event_name == "finalize":
+            # 处理关键阶段事件
+            if event_type == "on_chain_start":
+                stage_config = {
+                    "run_data_agents": {
+                        "action": display.start_data_agents,
+                        "task": "🔄 Data Analysis Agent 数据收集阶段",
+                        "progress": "数据收集阶段 1/4"
+                    },
+                    "run_research_agents": {
+                        "action": display.start_research_agents,
+                        "task": "🔄 Research Agent 研究分析阶段", 
+                        "progress": "研究分析阶段 2/4"
+                    },
+                    "run_contest": {
+                        "action": lambda: None,
+                        "task": "🔄 竞赛评选阶段",
+                        "progress": "竞赛评选阶段 3/4"
+                    },
+                    "finalize": {
+                        "action": lambda: None,
+                        "task": "🔄 结果生成阶段",
+                        "progress": "结果生成阶段 4/4"
+                    }
+                }
+                
+                if event_name in stage_config:
+                    config = stage_config[event_name]
+                    config["action"]()
+                    display.set_current_task(config["task"])
+                    display.set_progress_info(config["progress"])
+            
+            # 处理完成事件
+            elif event_type == "on_chain_end":
+                completion_config = {
+                    "run_data_agents": {
+                        "task": "✅ Data Analysis Agent 完成",
+                        "message": "✅ 所有Data Analysis Agent完成"
+                    },
+                    "run_research_agents": {
+                        "task": "✅ Research Agent 完成", 
+                        "message": "✅ 所有Research Agent完成"
+                    },
+                    "run_contest": {
+                        "task": "✅ 竞赛评选完成",
+                        "message": None
+                    },
+                    "finalize": {
+                        "task": "✅ 结果生成完成",
+                        "message": None,
+                        "special": True
+                    }
+                }
+                
+                if event_name in completion_config:
+                    config = completion_config[event_name]
+                    display.set_current_task(config["task"])
+                    if config.get("message"):
+                        display.add_message("系统", config["message"])
+                    
+                    if config.get("special"):  # finalize阶段的特殊处理
                         final_state = event_data.get("output", {})
-                        # 确保trigger_time被包含在final_state中
                         if 'trigger_time' not in final_state:
                             final_state['trigger_time'] = trigger_time
                         display.set_analysis_completed(True)
-                        
-            # 处理LangGraph子图事件（Agent事件）
-            elif event_name == "LangGraph":
-                if event_type == "on_chain_start":
-                    # 检查是否是Agent相关的事件
-                    tags = event.get("tags", [])
-                    if any("agent" in str(tag).lower() for tag in tags):
-                        display.add_message("Agent", f"🔄 启动Agent子图")
-                        if "data" in str(tags).lower():
-                            display.step_counts["data"] += 1
-                        elif "research" in str(tags).lower():
-                            display.step_counts["research"] += 1
-                            
-                elif event_type == "on_chain_end":
-                    tags = event.get("tags", [])
-                    if any("agent" in str(tag).lower() for tag in tags):
-                        display.add_message("Agent", f"✅ 完成Agent子图")
             
-            # 处理具体的节点事件
-            elif event_type in ["on_chain_start", "on_chain_end"]:
-                # 过滤掉不需要显示的事件
-                if event_name not in ["__start__", "__end__"]:
-                    emoji = "🔄" if event_type == "on_chain_start" else "✅"
-                    
-                    # 识别Agent类型
-                    if any(keyword in event_name.lower() for keyword in ["init_factor", "recompute_factor", "submit_result"]):
-                        # Data Analysis Agent相关事件
-                        agent_type = "Data Analysis Agent"
-                        display.step_counts["data"] += 1
-                    elif any(keyword in event_name.lower() for keyword in ["init_signal", "recompute_signal"]):
-                        # Research Agent相关事件
-                        agent_type = "Research Agent"  
-                        display.step_counts["research"] += 1
-                    else:
-                        agent_type = "系统"
-                    
-                    display.add_message(agent_type, f"{emoji} {event_name}")
+            # 处理具体的节点事件（用于步骤统计）
+            if event_type == "on_chain_start":
+                step_mapping = {
+                    "data": ["init_factor", "recompute_factor", "submit_result", "preprocess", "batch_process", "final_summary"],
+                    "research": ["init_signal", "recompute_signal", "init_data", "plan", "tool_selection", "call_tool", "write_result"],
+                    "contest": ["run_contest", "run_judger_critic"],
+                    "finalize": ["finalize"]
+                }
+                
+                for step_type, keywords in step_mapping.items():
+                    if any(keyword in event_name.lower() for keyword in keywords):
+                        display.step_counts[step_type] += 1
+                        break
             
-            # 更新显示
+            # 更新显示 - 由于启用了自动刷新，不需要手动refresh
             display.update_display(layout, trigger_time)
+        
+        # 停止状态检查任务并设置最终状态
+        if 'status_check_task' in locals():
+            status_check_task.cancel()
+            try:
+                await status_check_task
+            except asyncio.CancelledError:
+                pass
         
         # 设置所有Agent为完成状态
         for agent_name in display.agent_status:
@@ -514,6 +619,14 @@ async def run_with_events_capture(company, trigger_time: str, display: ContestTr
         return final_state
         
     except Exception as e:
+        # 停止状态检查任务
+        if 'status_check_task' in locals():
+            status_check_task.cancel()
+            try:
+                await status_check_task
+            except asyncio.CancelledError:
+                pass
+        
         display.add_message("错误", f"❌ 运行失败: {str(e)}")
         console.print(f"[red]详细错误: {e}[/red]")
         return None
@@ -541,22 +654,96 @@ def ask_user_for_next_action(final_state):
             return final_state, "quit"
 
 def display_detailed_report(final_state: Dict):
-    """显示详细报告"""
+    """显示详细的可滚动终端报告（使用Rich交互式显示）"""
     if not final_state:
         console.print("[red]无结果可显示[/red]")
         return
     
-    # 确定results目录路径 - 修正路径为ContestTrade/contest_trade/agents_workspace/results
-    results_dir = Path(PROJECT_ROOT) / "agents_workspace" / "results"
-    
     try:
-        # 使用新的报告模板生成和显示报告
-        report_path = display_final_report_interactive(final_state, results_dir)
-        console.print(f"\n[green]✨ 报告生成完成！[/green]")
-        console.print(f"[blue]📄 报告路径: {report_path}[/blue]")
+        from .static.report_template import FinalReportGenerator
+        generator = FinalReportGenerator(final_state)
+        step_results = final_state.get('step_results', {})
+        data_team_results = step_results.get('data_team', {})
+        research_team_results = step_results.get('research_team', {})
+        contest_results = step_results.get('contest', {})
+        
+        trigger_time = final_state.get('trigger_time', 'N/A')
+        data_factors_count = data_team_results.get('factors_count', 0)
+        research_signals_count = research_team_results.get('signals_count', 0)
+        best_signals = contest_results.get('best_signals', [])
+        
+        valid_signals = [s for s in best_signals if s.get('has_opportunity', 'no') == 'yes']
+        invalid_signals = [s for s in best_signals if s.get('has_opportunity', 'no') != 'yes']
+        
+        signal_rate = f"{len(valid_signals)/len(best_signals)*100:.1f}% ({len(valid_signals)}/{len(best_signals)})" if len(best_signals) > 0 else "0% (0/0)"
+        
+        markdown_content = f"""# ContestTrade 详细分析报告
+
+## 📊 执行摘要
+
+**分析时间**: {trigger_time}  
+**数据源数量**: {data_factors_count}  
+**研究信号数量**: {research_signals_count}  
+**有效投资信号**: {len(valid_signals)}  
+**信号有效率**: {signal_rate}
+
+---
+
+## 🎯 投资信号详情
+"""
+        
+        if valid_signals:
+            markdown_content += f"\n### ✅ 推荐投资信号 ({len(valid_signals)}个)\n\n"
+            
+            for i, signal in enumerate(valid_signals, 1):
+                symbol_name = signal.get('symbol_name', 'N/A')
+                symbol_code = signal.get('symbol_code', 'N/A')
+                action = signal.get('action', 'N/A')
+                probability = signal.get('probability', 'N/A')
+                agent_id = signal.get('agent_id', 'N/A')
+                
+                markdown_content += f"#### {i}. {symbol_name} ({symbol_code})\n\n"
+                markdown_content += f"- **投资动作**: {action}\n"
+                markdown_content += f"- **分析来源**: Research Agent {agent_id}\n\n"
+                
+                evidence_list = signal.get('evidence_list', [])
+                if evidence_list:
+                    markdown_content += f"**📋 支撑证据 ({len(evidence_list)}项):**\n\n"
+                    for j, evidence in enumerate(evidence_list, 1):
+                        desc = evidence.get('description', 'N/A')
+                        source = evidence.get('from_source', 'N/A')
+                        time = evidence.get('time', 'N/A')
+                        markdown_content += f"{j}. **{desc}**\n"
+                        markdown_content += f"   - 时间: {time}\n"
+                        markdown_content += f"   - 来源: {source}\n\n"
+                
+                # 风险提示
+                limitations = signal.get('limitations', [])
+                if limitations:
+                    markdown_content += f"**⚠️ 潜在风险:**\n\n"
+                    for limitation in limitations:
+                        markdown_content += f"- {limitation}\n"
+                    markdown_content += "\n"
+                
+                markdown_content += "---\n"
+        else:
+            markdown_content += "\n### ❌ 暂无推荐投资信号\n\n"
+            markdown_content += "本次分析未发现具有明确投资机会的信号。\n\n"
+        
+        # 无效信号统计
+        if invalid_signals:
+            markdown_content += f"### ⚠️ 排除信号 ({len(invalid_signals)}个)\n"
+            markdown_content += "以下信号经分析后认为不具备投资机会：\n\n"
+            
+            for i, signal in enumerate(invalid_signals, 1):
+                agent_id = signal.get('agent_id', 'N/A')
+                markdown_content += f"{i}. Research Agent {agent_id} - 无明确投资机会\n"
+            
+            markdown_content += "\n"
+        generator.display_terminal_interactive_report(markdown_content)
         
     except Exception as e:
-        console.print(f"[red]报告生成失败: {e}[/red]")
+        console.print(f"[red]交互式报告显示失败: {e}[/red]")
         console.print("[yellow]正在显示简化版报告...[/yellow]")
         
         # 显示简化版报告
@@ -570,31 +757,9 @@ def display_detailed_report(final_state: Dict):
         for i, signal in enumerate(valid_signals, 1):
             console.print(f"{i}. {signal.get('symbol_name', 'N/A')} - {signal.get('action', 'N/A')}")
 
-
-def display_simple_report(final_state: Dict):
-    """显示简单报告（备用方案）"""
-    console.print("\n" + "="*50)
-    console.print("[bold blue]ContestTrade 简化报告[/bold blue]")
-    console.print("="*50)
-    
-    step_results = final_state.get('step_results', {})
-    best_signals = step_results.get('contest', {}).get('best_signals', [])
-    valid_signals = [s for s in best_signals if s.get('has_opportunity', 'no') == 'yes']
-    
-    console.print(f"总信号数: {len(best_signals)}")
-    console.print(f"有效信号: {len(valid_signals)}")
-    
-    if valid_signals:
-        console.print("\n有效投资信号:")
-        for i, signal in enumerate(valid_signals, 1):
-            console.print(f"  {i}. {signal.get('symbol_name', 'N/A')} - {signal.get('action', 'N/A')}")
-    
-    console.print("\n" + "="*50)
-
 @app.command()
 def run(
     trigger_time: Optional[str] = typer.Option(None, "--time", "-t", help="触发时间 (YYYY-MM-DD HH:MM:SS)"),
-    interactive: bool = typer.Option(True, "--interactive/--no-interactive", "-i", help="交互模式"),
 ):
     """运行ContestTrade分析"""
     
@@ -602,11 +767,10 @@ def run(
     if not validate_config():
         console.print("[red]配置验证失败，请检查配置文件[/red]")
         raise typer.Exit(1)
-    
-    # 交互模式获取参数
-    if interactive:
-        if not trigger_time:
-            trigger_time = get_trigger_time()
+
+    # 获取触发时间
+    if not trigger_time:
+        trigger_time = get_trigger_time()
     
     # 验证触发时间
     if not trigger_time:
