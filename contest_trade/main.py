@@ -1,8 +1,8 @@
 """
 Simplified Trade Company - 合并所有冗余代码，包装成LangGraph工作流
 """
+import re
 import json
-import textwrap
 import asyncio
 from typing import List, Dict, TypedDict
 from langgraph.graph import END, StateGraph
@@ -341,41 +341,20 @@ class SimpleTradeCompany:
             else:
                 signals = self._parse_multiple_results(agent_output.get("final_result_thinking", ""), agent_output.get("final_result", ""))
             
-            # 为每个信号添加agent信息，确保固定5个信号
+            # 为每个信号添加agent信息，最多取5个信号
             valid_signals = []
-            for i, signal in enumerate(signals[:5]):  # 取前5个
+            for i, signal in enumerate(signals[:5]):
                 if signal:
                     signal["agent_id"] = agent_id
                     signal["agent_name"] = agent.config.agent_name
                     signal["signal_index"] = i + 1
                     valid_signals.append(signal)
-            
-            # 如果信号不足5个，用空信号补足
-            while len(valid_signals) < 5:
-                empty_signal = {
-                    "agent_id": agent_id,
-                    "agent_name": agent.config.agent_name,
-                    "signal_index": len(valid_signals) + 1,
-                    "thinking": "No sufficient market opportunity found",
-                    "has_opportunity": "no",
-                    "action": "hold",
-                    "symbol_code": "N/A",
-                    "symbol_name": "N/A",
-                    "evidence_list": [],
-                    "limitations": ["Insufficient market data or no clear opportunity identified"],
-                    "probability": "0"
-                }
-                valid_signals.append(empty_signal)
-            
             signals = valid_signals
         
         return {"signals": signals, "events": agent_events} if signals else None
 
     def _parse_multiple_results(self, thinking_result: str, output_result: str):
         """解析多个信号结果"""
-        import re
-        from utils.market_manager import GLOBAL_MARKET_MANAGER
-        
         thinking = thinking_result.split("<Output>")[0].strip('\n').strip()
         output = output_result.split("<Output>")[-1].strip('\n').strip()
         
@@ -392,12 +371,6 @@ class SimpleTradeCompany:
                 except Exception as e:
                     print(f"Error parsing individual signal: {e}")
                     continue
-            
-            # 如果没有找到signal块，尝试用原来的方法解析（向后兼容）
-            if not signals:
-                single_signal = self._parse_result(thinking_result, output_result)
-                if single_signal:
-                    signals.append(single_signal)
         
         except Exception as e:
             print(f"Error parsing multiple results: {e}")
@@ -406,9 +379,6 @@ class SimpleTradeCompany:
 
     def _parse_single_signal_block(self, signal_block: str, thinking: str):
         """解析单个信号块"""
-        import re
-        from utils.market_manager import GLOBAL_MARKET_MANAGER
-        
         try:
             has_opportunity = re.search(r"<has_opportunity>(.*?)</has_opportunity>", signal_block, flags=re.DOTALL).group(1).strip()
             action = re.search(r"<action>(.*?)</action>", signal_block, flags=re.DOTALL).group(1).strip()
@@ -461,50 +431,6 @@ class SimpleTradeCompany:
         except Exception as e:
             print(f"Error parsing single signal block: {e}")
             return None
-
-    def _parse_result(self, thinking_result: str, output_result: str):
-        """解析结果"""
-        import re
-        from utils.market_manager import GLOBAL_MARKET_MANAGER
-        
-        thinking = thinking_result.split("<Output>")[0].strip('\n').strip()
-        output = output_result.split("<Output>")[-1].strip('\n').strip()
-        try:
-            has_opportunity = re.search(r"<has_opportunity>(.*?)</has_opportunity>", output, flags=re.DOTALL).group(1)
-            action = re.search(r"<action>(.*?)</action>", output, flags=re.DOTALL).group(1)
-            symbol_code = re.search(r"<symbol_code>(.*?)</symbol_code>", output, flags=re.DOTALL).group(1)
-            symbol_name = re.search(r"<symbol_name>(.*?)</symbol_name>", output, flags=re.DOTALL).group(1)
-            evidence_list_str = re.search(r"<evidence_list>(.*?)</evidence_list>", output, flags=re.DOTALL).group(1)
-            evidence_list = []
-            for item in evidence_list_str.split("<evidence>"):
-                if '</evidence>' not in item:
-                    continue
-                evidence_description = item.split("</evidence>")[0].strip()
-                evidence_time = re.search(r"<time>(.*?)</time>", item, flags=re.DOTALL).group(1)
-                evidence_from_source = re.search(r"<from_source>(.*?)</from_source>", item, flags=re.DOTALL).group(1)
-                evidence_list.append({
-                    "description": evidence_description,
-                    "time": evidence_time,
-                    "from_source": evidence_from_source,
-                })
-
-            limitations_str = re.search(r"<limitations>(.*?)</limitations>", output, flags=re.DOTALL).group(1)
-            limitations = re.findall(r"<limitation>(.*?)</limitation>", limitations_str, flags=re.DOTALL)
-            probability = re.search(r"<probability>(.*?)</probability>", output, flags=re.DOTALL).group(1)
-            symbol_name, symbol_code = GLOBAL_MARKET_MANAGER.fix_symbol_code("CN-Stock", symbol_name, symbol_code)
-        except Exception as e:
-            print(f"Error parsing result: {e}")
-            return None
-        return {
-            "thinking": thinking,
-            "has_opportunity": has_opportunity,
-            "action": action,   
-            "symbol_code": symbol_code,
-            "symbol_name": symbol_name,
-            "evidence_list": evidence_list,
-            "limitations": limitations,
-            "probability": probability,
-        }
 
     # LangGraph工作流创建
     def create_company_workflow(self):

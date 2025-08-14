@@ -17,13 +17,15 @@
 
 > **Note:** This framework currently only supports the **Chinese A-share** market.
 
-##  Introduction
 
-This project aims to build a robust quantitative trading system powered by Large Language Models (LLMs).
+## Introduction
 
-To address the challenge of LLMs' sensitivity to market noise, we've developed an innovative multi-agent system with an internal competition mechanism. The system features two teams—a Data Team that processes market data into high-density text factors, and a Research Team that uses powerful financial tools to conduct in-depth analysis.
+This project aims to build a robust, LLM-driven quantitative trading system that can autonomously discover event-driven investment opportunities in real financial markets.
 
-The core innovation is our self-adaptive competition mechanism, where agents in both teams are continuously ranked based on real-time market feedback. Only the decisions from the highest-performing "winners" are adopted. This approach significantly enhances the system's robustness and leads to superior trading performance.
+To mitigate LLMs' sensitivity to market noise, ContestTrade adopts a structured two-team multi-agent design and an internal contest mechanism. The Data Team ingests and processes large volumes of market data, distilling them into high-information textual factors. The Research Team then uses a powerful set of financial tools (such as stock screening, financial metrics analysis, and web search) to perform in-depth, multi-round research on those factors and produce trading proposals.
+
+After all agents finish their analyses, the system evaluates and ranks agents by their live market performance. Similar to how top-performing fund managers are allocated more capital, only proposals from high-performing agents are adopted and receive proportionally more trading allocation, while poorer-performing agents may receive little or no capital. This competitive, performance-driven allocation improves robustness and reduces the impact of noisy or low-quality model outputs.
+
 
 
 ## Framework Overview
@@ -70,6 +72,19 @@ Edit the `config.yaml` file and enter your API keys. The table below lists all r
 | `LLM_THINKING_BASE_URL`  | LLM API base URL for complex reasoning     | No       |
 | `VLM_API_KEY`            | VLM API key for visual analysis            | No       |
 | `VLM_BASE_URL`           | VLM API base URL for visual analysis       | No       |
+
+## Preference
+
+Each Research Agent in the system acts based on one or more "trading beliefs". You can configure these beliefs as a JSON array in `contest_trade/config/belief_list.json`. Each entry should be a text description that defines the agent's stock-picking preference, investment style, or research perspective. Each belief will produce up to 5 candidate signals when executed.
+
+Example (`contest_trade/config/belief_list.json`):
+
+```json
+[
+  "Based on company business developments, industry trends, and potential market impact, recommend stock portfolios with short-term investment potential for two investor groups: Group 1 - risk-seekers (prefer high-volatility, mid/low market cap stocks); Group 2 - conservative investors (prefer low-volatility, stable-return, large-cap blue-chips).",
+  "Identify short-term event-driven trading opportunities based on sudden events, policy changes, and company announcements, combined with capital flow patterns and institutional seat movements."
+]
+```
 
 ## Usage
 

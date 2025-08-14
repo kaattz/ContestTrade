@@ -222,17 +222,18 @@ Please output {final_description} directly, do not include any other content.
 """
 
 prompt_for_research_invest_task = """
-As a professional researcher with specific belief, you need to find opportunities in the market today. You need to submit exactly 5 critical analysis suggestions to the investor.
+As a professional researcher with specific belief, you need to find opportunities in the market today. You need to submit up to 5 critical analysis suggestions to the investor.
 
-Your submission should include following parts for EACH of the 5 opportunities:
+Your submission should include following parts for EACH opportunity you identify:
 1. Does valuable opportunity exist in the market today?
 2. Symbol Information of the opportunity
 3. Evidence list you find to prove the opportunity is valuable. Judger will use these evidences to judge the opportunity is valuable or not.
 4. Based on the evidence_list, you need to give a probability to this opportunity.
 5. You need to give a limitation to your suggestion, such as risk, etc. No limitation will be rejected.
-6. You MUST provide exactly 5 opportunity suggestions.
+6. You should provide between 1 to 5 opportunity suggestions based on what you find in the market. Only submit signals for opportunities you genuinely identify.
 7. If accepted, your suggestions will execute when the market opens and hold for one day. So you need to focus on short-term information.
 8. Each signal should be independent and focus on different stocks or strategies.
+9. If you cannot find 5 valuable opportunities, submit fewer high-quality signals rather than padding with low-quality ones.
 """
 
 prompt_for_research_invest_output_format = """
@@ -254,73 +255,7 @@ prompt_for_research_invest_output_format = """
 </limitations>
 <probability>xxx</probability>  # 0-100
 </signal>
-<signal>
-<has_opportunity>xxx</has_opportunity>  # yes or no
-<action>xxx</action>  # buy or sell
-<symbol_code>xxx</symbol_code>     # such as 600519.SH or TSLA
-<symbol_name>xxx</symbol_name>  # such as 贵州茅台 or tesla
-<evidence_list>        # no more than 20 evidences
-<evidence>xxx</evidence>   # a detailed evidence description, including convincing logical inferences which support your suggestion. About 100 words.
-<time>xxx</time>           # evidence time
-<from_source>xxx</from_source>   # evidence source, from which media name or website name or tools name
-...
-</evidence_list>
-<limitations>
-<limitation>xxx</limitation>   # limitations of your suggestion, such as risk, etc.
-...
-</limitations>
-<probability>xxx</probability>  # 0-100
-</signal>
-<signal>
-<has_opportunity>xxx</has_opportunity>  # yes or no
-<action>xxx</action>  # buy or sell
-<symbol_code>xxx</symbol_code>     # such as 600519.SH or TSLA
-<symbol_name>xxx</symbol_name>  # such as 贵州茅台 or tesla
-<evidence_list>        # no more than 20 evidences
-<evidence>xxx</evidence>   # a detailed evidence description, including convincing logical inferences which support your suggestion. About 100 words.
-<time>xxx</time>           # evidence time
-<from_source>xxx</from_source>   # evidence source, from which media name or website name or tools name
-...
-</evidence_list>
-<limitations>
-<limitation>xxx</limitation>   # limitations of your suggestion, such as risk, etc.
-...
-</limitations>
-<probability>xxx</probability>  # 0-100
-</signal>
-<signal>
-<has_opportunity>xxx</has_opportunity>  # yes or no
-<action>xxx</action>  # buy or sell
-<symbol_code>xxx</symbol_code>     # such as 600519.SH or TSLA
-<symbol_name>xxx</symbol_name>  # such as 贵州茅台 or tesla
-<evidence_list>        # no more than 20 evidences
-<evidence>xxx</evidence>   # a detailed evidence description, including convincing logical inferences which support your suggestion. About 100 words.
-<time>xxx</time>           # evidence time
-<from_source>xxx</from_source>   # evidence source, from which media name or website name or tools name
-...
-</evidence_list>
-<limitations>
-<limitation>xxx</limitation>   # limitations of your suggestion, such as risk, etc.
-...
-</limitations>
-<probability>xxx</probability>  # 0-100
-</signal>
-<signal>
-<has_opportunity>xxx</has_opportunity>  # yes or no
-<action>xxx</action>  # buy or sell
-<symbol_code>xxx</symbol_code>     # such as 600519.SH or TSLA
-<symbol_name>xxx</symbol_name>  # such as 贵州茅台 or tesla
-<evidence_list>        # no more than 20 evidences
-<evidence>xxx</evidence>   # a detailed evidence description, including convincing logical inferences which support your suggestion. About 100 words.
-<time>xxx</time>           # evidence time
-<from_source>xxx</from_source>   # evidence source, from which media name or website name or tools name
-...
-</evidence_list>
-<limitations>
-<limitation>xxx</limitation>   # limitations of your suggestion, such as risk, etc.
-...
-</limitations>
-<probability>xxx</probability>  # 0-100
-</signal>
+<!-- Repeat <signal>...</signal> block for each opportunity you identify, up to 5 signals -->
+<!-- Only include signals for genuine opportunities you find in the market -->
 </signals>
 """
