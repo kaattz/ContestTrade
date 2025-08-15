@@ -284,7 +284,7 @@ class TushareDataProvider:
             sectors_info = TushareDataProvider.get_sector_moneyflow_data(trade_date, top_n)
             
             if not sectors_info:
-                return f"{trade_date} 无板块资金流向数据"
+                return None
             
             descriptions = []
             
@@ -310,11 +310,11 @@ class TushareDataProvider:
             if descriptions:
                 return f"{trade_date}板块资金流向（净流入前{len(descriptions)}）：{' '.join(descriptions)}"
             else:
-                return f"{trade_date} 无有效板块资金流向数据"
+                return None
                 
         except Exception as e:
             logger.error(f"获取板块资金流向数据摘要失败: {e}")
-            return f"{trade_date} 板块资金流向数据获取失败"
+            return None
 
     @staticmethod
     def get_top_inst_data(trade_date: str) -> pd.DataFrame:
