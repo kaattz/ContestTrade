@@ -69,7 +69,7 @@ class ContestTradeDisplay:
         
         # 日志监控相关
         self.logs_dir = Path(PROJECT_ROOT) / "agents_workspace" / "logs"
-        self.logs_dir.mkdir(exist_ok=True)
+        self.logs_dir.mkdir(parents=True, exist_ok=True)
         
     def create_log_file(self, trigger_time: str):
         """创建本次运行的日志文件"""
