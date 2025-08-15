@@ -215,13 +215,11 @@ class PriceMarket(DataSourceBase):
             
             kline_charts_base64 = self.generate_kline_charts_base64(kline_data, trade_date)
             
-            available_sources = 0
-            if kline_data:
-                available_sources += 1
-            if current_day_data:
-                available_sources += 1
-            if sector_summary and "无数据" not in sector_summary:
-                available_sources += 1
+            has_kline_charts_base64 = bool(kline_charts_base64)
+            has_current_day_data = bool(current_day_data)
+            has_sector_summary = bool(sector_summary)
+
+            available_sources = has_kline_charts_base64 + has_current_day_data + has_sector_summary
             
             if available_sources == 0:
                 return {
@@ -232,15 +230,6 @@ class PriceMarket(DataSourceBase):
                     'kline_charts_base64': {}
                 }
             
-            image_contents = []
-            for stock_code, chart_info in kline_charts_base64.items():
-                image_contents.append({
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/png;base64,{chart_info['base64']}",
-                        "detail": "high"
-                    }
-                })
             
             prompt = f"""
 请分析以下{trade_date}的A股市场综合数据，并给出专业的宏观市场分析报告（2000字符以内）：
@@ -251,7 +240,7 @@ class PriceMarket(DataSourceBase):
 ## 二、板块资金流向（东方财富数据）
 {sector_summary}
 
-## 三、三大指数K线图分析
+## 三、三大指数K线图分析（如果有提供K线图）
 请仔细分析提供的三张K线图（上证指数、创业板指、科创50），关注：
 - 近期走势趋势（上涨/下跌/震荡）
 - 技术指标表现（MA5、MA10、MA20均线）
@@ -274,7 +263,16 @@ class PriceMarket(DataSourceBase):
 请基于事实数据生成客观的市场描述报告：
 """
             
-            if cfg.vlm.get("api_key", None):
+            if GLOBAL_VISION_LLM and has_kline_charts_base64:
+                image_contents = []
+                for stock_code, chart_info in kline_charts_base64.items():
+                    image_contents.append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/png;base64,{chart_info['base64']}",
+                            "detail": "high"
+                        }
+                    })
                 user_message = {
                     "role": "user",
                     "content": [
@@ -313,30 +311,22 @@ class PriceMarket(DataSourceBase):
                 
             
             if response and response.content:
-                return {
-                    'trade_date': trade_date,
-                    'raw_data': prompt,
-                    'llm_summary': response.content,
-                    'data_count': available_sources,
-                    'data_sources': {
-                        'kline_data': bool(kline_data),
-                        'current_day_data': bool(current_day_data),
-                        'sector_summary': bool(sector_summary and "无数据" not in sector_summary)
-                    }
-                }
+                llm_summary = response.content
             else:
-                return {
-                    'trade_date': trade_date,
-                    'raw_data': prompt,
-                    'llm_summary': "LLM分析失败",
-                    'data_count': available_sources,
-                    'kline_charts_base64': kline_charts_base64,
-                    'data_sources': {
-                        'kline_data': bool(kline_data),
-                        'current_day_data': bool(current_day_data),
-                        'sector_summary': bool(sector_summary and "无数据" not in sector_summary)
-                    }
+                logger.error(f"LLM分析未返回内容")
+                llm_summary = "LLM分析失败"
+            
+            return {
+                'trade_date': trade_date,
+                'raw_data': prompt,
+                'llm_summary': llm_summary,
+                'data_count': available_sources,
+                'data_sources': {
+                    'kline_data': has_kline_charts_base64,
+                    'current_day_data': has_current_day_data,
+                    'sector_summary': has_sector_summary
                 }
+            }
                 
         except Exception as e:
             logger.error(f"获取LLM总结失败: {e}")
