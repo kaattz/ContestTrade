@@ -12,21 +12,24 @@
 </div>
 
 ---
-# ContestTrade: A Multi-Agent Trading System Based on an Internal Contest Mechanism
+# ContestTrade: A Multi-Agent Trading System Based on Internal Contest Mechanism
 
-**ContestTrade** is an innovative multi-agent trading framework that allows you to easily build your own exclusive AI trading team. Simply set the analysis time, and it will autonomously scan the entire market, unearthing potential investment opportunities from massive amounts of data. Through its internal optimization mechanism, it constructs the most reliable A-share investment portfolio for you.
+**ContestTrade** is an innovative multi-agent (Multi-Agent) trading framework. With ContestTrade you can easily build a dedicated AI trading team: just set the analysis time, and it will autonomously scan the whole market without human intervention, mine potential event-driven investment opportunities from massive data, and, through an internal selection mechanism, construct the most trustworthy investment portfolio for you.
 
 > **Note:** This framework currently only supports the **Chinese A-share** market.
 
 
+
 ## Introduction
 
-This project aims to build a robust, LLM-driven quantitative trading system that can autonomously discover event-driven investment opportunities in real financial markets.
+ContestTrade is a multi-agent trading framework focused on event-driven stock selection. The system's goal is to automatically discover, evaluate, and track event-driven opportunities with investment value without human intervention, and finally output executable asset allocation recommendations.
 
-To mitigate LLMs' sensitivity to market noise, ContestTrade adopts a structured two-team multi-agent design and an internal contest mechanism. The Data Team ingests and processes large volumes of market data, distilling them into high-information textual factors. The Research Team then uses a powerful set of financial tools (such as stock screening, financial metrics analysis, and web search) to perform in-depth, multi-round research on those factors and produce trading proposals.
+**Core features:**
+- **Automatic stock selection**: whole-market scanning and signal generation that automatically outputs tradable candidate stock lists without manual screening.
+- **Event-driven**: triggered by catalysts such as news, announcements, capital flows, and policy; focuses on opportunities with significant information impact.
+- **Personalized configuration**: supports user-defined agent research preferences and strategies to flexibly adapt to different investment styles.
 
-After all agents finish their analyses, the system evaluates and ranks agents by their live market performance. Similar to how top-performing fund managers are allocated more capital, only proposals from high-performing agents are adopted and receive proportionally more trading allocation, while poorer-performing agents may receive little or no capital. This competitive, performance-driven allocation improves robustness and reduces the impact of noisy or low-quality model outputs.
-
+> Note: This framework currently only supports the **Chinese A-share** market.
 
 
 ## Framework Overview
@@ -74,16 +77,30 @@ Edit the `config.yaml` file and enter your API keys. The table below lists all r
 | `VLM_API_KEY`            | VLM API key for visual analysis            | No       |
 | `VLM_BASE_URL`           | VLM API base URL for visual analysis       | No       |
 
+
 ## Preference
 
-Each Research Agent in the system acts based on one or more "trading beliefs". You can configure these beliefs as a JSON array in `contest_trade/config/belief_list.json`. Each entry should be a text description that defines the agent's stock-picking preference, investment style, or research perspective. Each belief will produce up to 5 candidate signals when executed.
+Each Research Agent corresponds to a "trading belief". The system will generate investment signals based on these beliefs combined with data and tools (each belief outputs up to 5 signals). The configuration file is located at `contest_trade/config/belief_list.json`, and its format is a JSON array of strings.
 
-Example (`contest_trade/config/belief_list.json`):
-
+Example 1 — preference for short-term event-driven (more aggressive):
 ```json
 [
-  "Based on company business developments, industry trends, and potential market impact, recommend stock portfolios with short-term investment potential for two investor groups: Group 1 - risk-seekers (prefer high-volatility, mid/low market cap stocks); Group 2 - conservative investors (prefer low-volatility, stable-return, large-cap blue-chips).",
-  "Identify short-term event-driven trading opportunities based on sudden events, policy changes, and company announcements, combined with capital flow patterns and institutional seat movements."
+  "Focus on short-term event-driven opportunities: prioritize company announcements, M&A and restructuring, sudden order increases, technological breakthroughs and other catalysts; prefer mid/small-cap, high-volatility thematic stocks, suitable for aggressive arbitrage strategies."
+]
+```
+
+Example 2 — preference for stable events (more conservative):
+```json
+[
+  "Focus on stable, high-certainty events: pay attention to dividends, buybacks, earnings forecast confirmations, major contract signings and policy tailwinds; prefer large-cap blue-chips with low volatility and high certainty, suitable for conservative allocation."
+]
+```
+
+Default configuration:
+```json
+[
+  "Based on the provided information, comprehensively consider each company's business dynamics, industry trends and potential market impact. Recommend stock portfolios with short-term investment potential for two groups: Group 1 — risk-seekers (prefer high volatility, high returns, mid/low market cap stocks); Group 2 — conservative investors (prefer low volatility, stable returns, large-cap stocks).",
+  "Based on recent sudden events, policy adjustments and company announcements as catalysts, combined with market sentiment transmission paths and capital game features. Screen event-driven opportunities for two different styles: Group 1 — aggressive arbitrage (prefer restructuring expectation, sudden order increases, technical breakthroughs in small-cap stocks); Group 2 — defensive arbitrage (prefer dividend increases, large buybacks, acquisition of franchise rights in blue-chip stocks). Pay attention to northbound capital movement and institutional seat trends on the trading leaderboard for resonance effects."
 ]
 ```
 
