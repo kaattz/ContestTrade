@@ -16,10 +16,6 @@
 
 **ContestTrade** is an innovative multi-agent (Multi-Agent) trading framework. With ContestTrade you can easily build a dedicated AI trading team: just set the analysis time, and it will autonomously scan the whole market without human intervention, mine potential event-driven investment opportunities from massive data, and, through an internal selection mechanism, construct the most trustworthy investment portfolio for you.
 
-> **Note:** This framework currently only supports the **Chinese A-share** market.
-
-
-
 ## Introduction
 
 ContestTrade is a multi-agent trading framework focused on event-driven stock selection. The system's goal is to automatically discover, evaluate, and track event-driven opportunities with investment value without human intervention, and finally output executable asset allocation recommendations.
