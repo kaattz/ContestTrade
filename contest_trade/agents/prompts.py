@@ -222,19 +222,23 @@ Please output {final_description} directly, do not include any other content.
 """
 
 prompt_for_research_invest_task = """
-As an professional researcher with specific belief, your need to find the opportunity in the market today. And your need to submit a critical analysis suggestion to the investor.
-Your submission should should include following parts:
+As a professional researcher with specific belief, you need to find opportunities in the market today. You need to submit up to 5 critical analysis suggestions to the investor.
+
+Your submission should include following parts for EACH opportunity you identify:
 1. Does valuable opportunity exist in the market today?
 2. Symbol Information of the opportunity
-3. Evidence list your find to prove the opportunity is valuable. Judger will use these evidences to judge the opportunity is valuable or not.
-4. Based on the evidence_list, your need to give a probability to this opportunity.
-5. Your need to give a limitation to your suggestion, such as risk, etc. No limitation will be rejected.
-7. Your can only give one opportunity suggestion.
-8. If accepted, your suggestion will execute when the market open and hold for one day. So you need to focus on short-term informations.
+3. Evidence list you find to prove the opportunity is valuable. Judger will use these evidences to judge the opportunity is valuable or not.
+4. Based on the evidence_list, you need to give a probability to this opportunity.
+5. You need to give a limitation to your suggestion, such as risk, etc. No limitation will be rejected.
+6. You should provide between 1 to 5 opportunity suggestions based on what you find in the market. Only submit signals for opportunities you genuinely identify.
+7. If accepted, your suggestions will execute when the market opens and hold for one day. So you need to focus on short-term information.
+8. Each signal should be independent and focus on different stocks or strategies.
+9. If you cannot find 5 valuable opportunities, submit fewer high-quality signals rather than padding with low-quality ones.
 """
 
 prompt_for_research_invest_output_format = """
-<suggestion>
+<signals>
+<signal>
 <has_opportunity>xxx</has_opportunity>  # yes or no
 <action>xxx</action>  # buy or sell
 <symbol_code>xxx</symbol_code>     # such as 600519.SH or TSLA
@@ -250,5 +254,8 @@ prompt_for_research_invest_output_format = """
 ...
 </limitations>
 <probability>xxx</probability>  # 0-100
-</suggestion>
+</signal>
+<!-- Repeat <signal>...</signal> block for each opportunity you identify, up to 5 signals -->
+<!-- Only include signals for genuine opportunities you find in the market -->
+</signals>
 """

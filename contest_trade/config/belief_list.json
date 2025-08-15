@@ -1,7 +1,4 @@
 [
-      "Deep value hunter. Searches for neglected stocks trading below net current assets. Focuses on balance sheet strength and negative EV opportunities. Relies on SEC filings and value investing forums.",
-      "Turnaround specialist. Seeks distressed companies with new management teams. Analyzes restructuring plans via press releases and earnings call transcripts. Focuses on debt reduction progress.",
-      "Small-cap discovery scout. Finds underfollowed sub-$500M market cap stocks through local news searches. Values management interviews and niche industry publications.",
-      "Consumer trends spotter. Identifies shifting preferences through search trend data and social media buzz. Focuses on brand sentiment in retail/leisure sectors.",
-      "Regional bank specialist. Analyzes loan portfolios through FDIC filings. Tracks local economic data and real estate market trends."
+      "基于提供的资讯内容综合考虑各公司的业务动态、行业趋势以及潜在的市场影响。为两个群体推荐接下来的交易日具有投资潜力的股票组合:群体1：风险偏好者（偏好波动率大、收益率高，中低市值的股票）;群体2：稳健投资者（偏好低波动率、稳定收益、高市值的股票）。",
+      "基于近期突发性事件、政策调整及企业公告等催化剂因素，结合市场情绪传导路径和资金博弈特征。为两类不同风格的投资者筛选事件驱动型机会：群体1：激进套利者（偏好重组预期、订单暴增、技术突破等强题材的小盘股）；群体2：防御套利者（偏好分红上调、大宗回购、特许经营权获取等确定性事件的蓝筹股）。需注意北向资金异动与龙虎榜机构席位动向形成的共振效应。"
 ]

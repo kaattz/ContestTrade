@@ -186,7 +186,7 @@ class ContestTradeDisplay:
         if console_size.width < 120:
             left_ratio, right_ratio = 2, 3  # 窄屏时调整比例
         else:
-            left_ratio, right_ratio = 3, 4  # 宽屏时的比例
+            left_ratio, right_ratio = 4, 7  # 宽屏时的比例
             
         layout["main_content"].split_row(
             Layout(name="left_panel", ratio=left_ratio),
@@ -289,7 +289,7 @@ class ContestTradeDisplay:
         content_text.append("🔄 实时事件日志\n", style="bold blue")
         
         if self.messages:
-            for msg in list(self.messages)[-10:]:  # 显示最后10条消息
+            for msg in list(self.messages)[-8:]:
                 content_text.append(f"{msg}\n")
         else:
             content_text.append("  ⏳ 等待事件...\n")
