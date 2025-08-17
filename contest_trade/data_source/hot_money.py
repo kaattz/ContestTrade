@@ -10,7 +10,6 @@ from data_source.data_source_base import DataSourceBase
 from utils.tushare_provider import TushareDataProvider
 from models.llm_model import GLOBAL_LLM
 from loguru import logger
-from utils.date_utils import get_previous_trading_date
 
 class HotMoney(DataSourceBase):
     def __init__(self):
@@ -51,8 +50,7 @@ class HotMoney(DataSourceBase):
             DataFrame: 热钱市场数据
         """
         try:
-            # 将trigger_time转换为交易日期格式
-            trade_date = datetime.strptime(trigger_time, "%Y-%m-%d %H:%M:%S").strftime("%Y%m%d")
+            trade_date = get_previous_trading_date(trigger_time)
             
             logger.info(f"异步获取 {trade_date} 的热钱市场数据")
             
@@ -79,8 +77,7 @@ class HotMoney(DataSourceBase):
             DataFrame: 热钱市场数据
         """
         try:
-            # 将trigger_time转换为交易日期格式
-            trade_date = datetime.strptime(trigger_time, "%Y-%m-%d %H:%M:%S").strftime("%Y%m%d")
+            trade_date = get_previous_trading_date(trigger_time)
             
             logger.info(f"获取 {trade_date} 的热钱市场数据")
             
@@ -245,7 +242,7 @@ class HotMoney(DataSourceBase):
         try:
             # 异步获取原始数据
             df = await self.get_raw_data(trigger_time)
-            trade_date = datetime.strptime(trigger_time, "%Y-%m-%d %H:%M:%S").strftime("%Y%m%d")
+            trade_date = get_previous_trading_date(trigger_time)
             
             if df.empty:
                 return {
@@ -326,7 +323,7 @@ class HotMoney(DataSourceBase):
         try:
             # 异步获取原始数据
             df = await self.get_raw_data(trigger_time)
-            trade_date = datetime.strptime(trigger_time, "%Y-%m-%d %H:%M:%S").strftime("%Y%m%d")
+            trade_date = get_previous_trading_date(trigger_time)
             
             if df.empty:
                 return {
