@@ -1,28 +1,15 @@
 import questionary
 from typing import List, Optional, Tuple, Dict
 from datetime import datetime, timedelta
-import re
-import time
-import sys
-import os
 import tushare as ts
 from rich.console import Console
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+from contest_trade.config.config import cfg
+from contest_trade.models.llm_model import GLOBAL_LLM
 
 console = Console()
 
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 def get_trigger_time() -> str:
     """提示用户输入触发时间"""
-    def validate_datetime(datetime_str: str) -> bool:
-        try:
-            datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
-            return True
-        except ValueError:
-            return False
 
     now = datetime.now()
     options = [
@@ -48,46 +35,21 @@ def get_trigger_time() -> str:
     elif choice == options[2]:
         return f"{now.strftime('%Y-%m-%d')} 16:30:00"
 
-def validate_config() -> bool:
-    """验证配置"""
-    try:
-        from contest_trade.config.config import cfg
-        return True
-    except ImportError as e:
-        console.print(f"[red]配置加载失败: {e}[/red]")
-        return False
-    except Exception as e:
-        console.print(f"[red]配置验证失败: {e}[/red]")
-        return False
-
 def validate_tushare_connection():
-    """验证Tushare连接"""
     try:
         console.print("🔍 [cyan]正在验证必要配置1: Tushare配置...[/cyan]")
-        from contest_trade.config.config import cfg
         ts.set_token(cfg.tushare_key)
-        pro = ts.pro_api(cfg.tushare_key)
-        
-        def call_tushare_api():
-            end_date = datetime.now().strftime('%Y%m%d')
-            start_date = (datetime.now() - timedelta(days=3)).strftime('%Y%m%d')
-            return pro.trade_cal(exchange='SSE', start_date=start_date, end_date=end_date)
-        
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(call_tushare_api)
-            try:
-                trade_cal = future.result(timeout=10)
-                if trade_cal is not None and len(trade_cal) > 0:
-                    console.print(f"✅ [green]Tushare连接成功[/green]")
-                    return True
-                else:
-                    console.print("❌ [red]Tushare连接失败 - 未获取到数据[/red]")
-                    return False
-                    
-            except FutureTimeoutError:
-                console.print("❌ [red]Tushare连接失败 - 请求超时[/red]")
-                return False
-                
+        pro = ts.pro_api(cfg.tushare_key, timeout=3)
+        end_date = datetime.now().strftime('%Y%m%d')
+        start_date = (datetime.now() - timedelta(days=3)).strftime('%Y%m%d')
+        trade_cal = pro.trade_cal(exchange='SSE', start_date=start_date, end_date=end_date, timeout=1)
+        print(trade_cal)
+        if trade_cal is not None and len(trade_cal) > 0:
+            console.print(f"✅ [green]Tushare连接成功[/green]")
+            return True
+        else:
+            console.print("❌ [red]Tushare连接失败 - 未获取到数据[/red]")
+            return False
     except Exception as e:
         console.print(f"❌ [red]Tushare连接失败: {str(e)}[/red]")
         return False
@@ -96,14 +58,11 @@ def validate_llm_connection():
     """验证LLM连接"""
     try:
         console.print("🔍 [cyan]正在验证必要配置2: LLM配置...[/cyan]")
-        
-        from contest_trade.models.llm_model import GLOBAL_LLM
-        
         test_messages = [
             {"role": "user", "content": "请回复'连接测试成功'，不要添加任何其他内容。"}
         ]
         
-        result = GLOBAL_LLM.run(test_messages, max_tokens=1, temperature=0.1)
+        result = GLOBAL_LLM.run(test_messages, max_tokens=1, temperature=0.1, max_retries=0)
         
         if result and hasattr(result, 'content') and result.content:
             console.print(f"✅ [green]LLM连接成功[/green] - 模型: {GLOBAL_LLM.model_name}")
@@ -158,7 +117,6 @@ def format_event_type(event_type: str) -> str:
         "on_chain_error": "❌",
     }
     return f"{event_icons.get(event_type, '📝')} {event_type}"
-
 
 def extract_signal_info(signal: Dict) -> Dict:
     """提取信号信息"""

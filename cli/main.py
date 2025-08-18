@@ -18,7 +18,7 @@ from rich.text import Text
 from rich.align import Align
 from rich import box
 
-from .utils import get_trigger_time, validate_config, validate_required_services
+from .utils import get_trigger_time, validate_required_services
 from .static.report_template import display_final_report_interactive
 from contest_trade.config.config import cfg, PROJECT_ROOT
 sys.path.append(str(PROJECT_ROOT))
@@ -764,11 +764,6 @@ def run(
     trigger_time: Optional[str] = typer.Option(None, "--time", "-t", help="触发时间 (YYYY-MM-DD HH:MM:SS)"),
 ):
     """运行ContestTrade分析"""
-    
-    # 验证配置
-    if not validate_config():
-        console.print("[red]配置验证失败，请检查配置文件[/red]")
-        raise typer.Exit(1)
 
     # 获取触发时间
     if not trigger_time:
