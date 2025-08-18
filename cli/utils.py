@@ -1,11 +1,13 @@
 import questionary
 from typing import List, Optional, Tuple, Dict
-from datetime import datetime
+from datetime import datetime, timedelta
 import re
 import time
 import sys
 import os
+import tushare as ts
 from rich.console import Console
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 
 console = Console()
 
@@ -22,7 +24,6 @@ def get_trigger_time() -> str:
         except ValueError:
             return False
 
-    # 提供预设选项
     now = datetime.now()
     options = [
         f"今天A股盘前 ({now.strftime('%Y-%m-%d')} 09:00:00)",
@@ -63,22 +64,33 @@ def validate_tushare_connection():
     """验证Tushare连接"""
     try:
         console.print("🔍 [cyan]正在验证必要配置1: Tushare配置...[/cyan]")
-        import contest_trade.utils.tushare_utils as tushare_utils
-        if not hasattr(tushare_utils, 'pro'):
-            tushare_utils.pro = tushare_utils.tushare_cached.pro
-        from contest_trade.utils.tushare_utils import get_trade_date
-        trade_dates = get_trade_date(verbose=False)
+        from contest_trade.config.config import cfg
+        ts.set_token(cfg.tushare_key)
+        pro = ts.pro_api(cfg.tushare_key)
         
-        if trade_dates and len(trade_dates) > 0:
-            console.print(f"✅ [green]Tushare连接成功[/green]")
-            return True
-        else:
-            console.print("❌ [red]Tushare连接失败[/red]")
-            return False
+        def call_tushare_api():
+            end_date = datetime.now().strftime('%Y%m%d')
+            start_date = (datetime.now() - timedelta(days=3)).strftime('%Y%m%d')
+            return pro.trade_cal(exchange='SSE', start_date=start_date, end_date=end_date)
+        
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(call_tushare_api)
+            try:
+                trade_cal = future.result(timeout=10)
+                if trade_cal is not None and len(trade_cal) > 0:
+                    console.print(f"✅ [green]Tushare连接成功[/green]")
+                    return True
+                else:
+                    console.print("❌ [red]Tushare连接失败 - 未获取到数据[/red]")
+                    return False
+                    
+            except FutureTimeoutError:
+                console.print("❌ [red]Tushare连接失败 - 请求超时[/red]")
+                return False
+                
     except Exception as e:
         console.print(f"❌ [red]Tushare连接失败: {str(e)}[/red]")
         return False
-
 
 def validate_llm_connection():
     """验证LLM连接"""
@@ -91,7 +103,7 @@ def validate_llm_connection():
             {"role": "user", "content": "请回复'连接测试成功'，不要添加任何其他内容。"}
         ]
         
-        result = GLOBAL_LLM.run(test_messages, max_tokens=10, temperature=0.1)
+        result = GLOBAL_LLM.run(test_messages, max_tokens=1, temperature=0.1)
         
         if result and hasattr(result, 'content') and result.content:
             console.print(f"✅ [green]LLM连接成功[/green] - 模型: {GLOBAL_LLM.model_name}")
