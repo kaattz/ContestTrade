@@ -162,12 +162,13 @@ ContestTrade 是一个由社区驱动的开源项目，我们欢迎任何形式�
 * **提出功能建议或反馈Bug:** [前往 Issues 页面](https://github.com/FinStep-AI/ContestTrade/issues)
 * **反馈您的测试效果:** 包括测试结果、使用体验等。
 
-<div align="center">
-<a href="https://star-history.com/#FinStep-AI/ContestTrade&Date">
-  <img src="https://api-star-history.com/svg?repos=FinStep-AI/ContestTrade&type=Date" alt="Star History Chart" style="width: 100%;">
-</a>
-</div>
+## Star History
 
+<div align="center">
+  <a href="https://star-history.com/#FinStep-AI/ContestTrade&Date">
+    <img src="https://api.star-history.com/svg?repos=FinStep-AI/ContestTrade&type=Date" alt="Star History Chart" style="width: 80%;">
+  </a>
+</div>
 
 ## 风险声明
 
