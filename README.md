@@ -26,7 +26,7 @@ ContestTrade 是一个面向事件驱动选股的多智能体交易框架。系�
 - **事件驱动**：以新闻、公告、资金流、政策等催化事件为触发，关注具有显著信息冲击的机会。
 - **个性化配置**：支持用户自定义智能体的研究偏好和策略，灵活适应不同投资风格。
 
-> 注意: 目前框架仅支持 **中国A股** 市场。
+> 目前框架仅支持 **A股** 市场。
 
 ## Framework Overview (框架概览)
 
@@ -61,17 +61,20 @@ pip install -r requirements.txt
 
 编辑 `config.yaml` 文件，填入您的API密钥。下表列出了所有必需和可选的密钥：
 
-| Key | Description | Required |
-| :--- | :--- | :--- |
-| `TUSHARE_KEY` | Tushare 数据接口密钥 | **Yes** |
-| `BOCHA_KEY` | Bocha 搜索引擎密钥 | No |
-| `SERP_KEY` | SerpAPI 搜索引擎密钥 | No |
-| `LLM_API_KEY` | 用于通用任务的LLM API密钥 | **Yes** |
-| `LLM_BASE_URL` | 用于通用任务的LLM API地址 | **Yes** |
-| `LLM_THINKING_API_KEY` | 用于复杂推理的LLM API密钥 | No |
-| `LLM_THINKING_BASE_URL`| 用于复杂推理的LLM API地址 | No |
-| `VLM_API_KEY` | 用于视觉分析的VLM API密钥 | No |
-| `VLM_BASE_URL` | 用于视觉分析的VLM API地址 | No |
+<div align="center">
+
+| 配置项 (Key) | 描述 (Description) | 必需 (Required) |
+| :--- | :--- | :---: |
+| `TUSHARE_KEY` | Tushare 数据接口密钥 | ✅ |
+| `BOCHA_KEY` | Bocha 搜索引擎密钥 | ❌ |
+| `SERP_KEY` | SerpAPI 搜索引擎密钥 | ❌ |
+| `LLM` | 用于通用任务的LLM API | ✅ |
+| `LLM_THINKING` | 用于复杂推理的LLM API | ❌ |
+| `VLM` | 用于视觉分析的VLM API | ❌ |
+
+</div>
+
+> 注意：LLM API 和 VLM API 需要您自行申请，具体根据您使用的平台和模型填写URL、API Key以及模型名称。
 
 ## Preference (选股偏好)
 
@@ -99,7 +102,7 @@ pip install -r requirements.txt
 ]
 ```
 
-说明：将您偏好的文本描述逐条加入 `contest_trade/config/belief_list.json` 中，系统会为每条信念分别运行相应的 Research Agent 并输出信号。
+说明（可选）：将您偏好的文本描述逐条加入 `contest_trade/config/belief_list.json` 中，系统会为每条信念分别运行相应的 Research Agent 并输出信号。
 
 ## Usage (使用方法)
 
@@ -128,10 +131,48 @@ python -m cli.main run
   <img src="assets/contest_trade_cli_report_detail.jpg" style="width: 100%; height: auto;">
 </p>
 
+## 🌟 我们的愿景与路线图 (Vision & Roadmap)
+
+我们坚信AGI时代即将到来，我们希望能够借助开源社区的力量，探索AGI时代下量化交易的新范式。
+
+该项目致力于研发更完善的基础设施和更丰富的Agent，探索AI在金融交易的能力边界，打造一个稳定、可信、且能规模化扩展的Agent交易框架。
+
+### 项目路线图 (Roadmap)
+
+**V0.1.0 (当前): 框架稳定性增强 & 核心体验优化**
+- [x] 核心数据源模块解耦，实现多数据源的adaptor (`data-provider` refactor)
+- [ ] 优化CLI日志与交互体验
+
+**V0.2.0 (计划中): 市场与功能拓展**
+- [ ] 接入 **美股** 市场数据
+- [ ] 引入更丰富的因子与信号来源
+
+**未来规划 (Future):**
+- [ ] 支持港股及其他市场
+- [ ] 可视化回测与分析界面
+- [ ] 支持更多Agent的scale up
+
+## Contributing (贡献指南)
+
+ContestTrade 是一个由社区驱动的开源项目，我们欢迎任何形式的贡献！
+
+如果您是开发者，可以参考我们的 **[贡献指南 (CONTRIBUTING.md)](CONTRIBUTING.md)** 成为ContestTrade的贡献者。
+
+我们同样珍视非代码形式的贡献，包括：
+* **提出功能建议或反馈Bug:** [前往 Issues 页面](https://github.com/FinStep-AI/ContestTrade/issues)
+* **反馈您的测试效果:** 包括测试结果、使用体验等。
+
+## Star History
+
+<div align="center">
+  <a href="https://star-history.com/#FinStep-AI/ContestTrade&Date">
+    <img src="https://api.star-history.com/svg?repos=FinStep-AI/ContestTrade&type=Date" alt="Star History Chart" style="width: 80%;">
+  </a>
+</div>
 
 ## 风险声明
 
-**重要声明:** 本项目 `ContestTrade` 是一个开源的量化交易研究框架，仅供学术研究和教育目的使用。项目中包含的示例、数据和分析结果不构成任何形式的投资建议。
+**重要声明:** 本项目 `ContestTrade` 是一个开源的量化交易Agent框架，仅供学术研究和教育目的使用。项目中包含的示例、数据和分析结果不构成任何形式的投资建议。
 
 **风险提示:**
 *   **市场风险:** 本项目不构成任何形式的投资、财务、法律或税务建议。所有输出，包括交易信号和分析，均为基于历史数据的AI模型推演结果，不应被视为任何买卖操作的依据。
@@ -140,16 +181,6 @@ python -m cli.main run
 *   **责任自负:**  开发者不对任何因使用或无法使用本框架而导致的直接或间接损失承担任何责任。投资有风险，入市需谨慎。
 
 **在将本框架用于任何实际交易决策之前，请务必充分了解相关风险。**
-
-## Contributing (贡献指南)
-
-我们非常欢迎来自社区的贡献！无论您是想修复一个bug、增加一个新的金融工具，还是改进文档，您的帮助对我们都至关重要。
-
-如果您有兴趣，可以从以下方面开始：
-
-*   查看`Issues`页面，寻找可以解决的问题。
-*   提出您的新功能建议。
-*   帮助我们完善和翻译文档。
 
 ## Citation (引用)
 
