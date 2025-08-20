@@ -30,7 +30,7 @@ async def price_info(market: str, symbol: str, trigger_time: str=None) -> str:
         end_date = (trigger_date - timedelta(days=1)).strftime("%Y%m%d")
         start_date = (trigger_date - timedelta(days=30)).strftime("%Y%m%d")
 
-        if market in ["CN-Stock", "HK-Stock"]:
+        if market in ["CN-Stock"]:
             # Normalize symbol like 600519.SH -> 600519
             base_symbol = symbol.split(".")[0]
             # Fetch via akshare with caching
