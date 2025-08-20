@@ -356,32 +356,50 @@ class MarketManager:
                 }
             )
         elif market == Market.CSI300:
-            df = pro_cached.run(
-                func_name="index_weight", 
-                func_kwargs={
-                    "index_code": "000300.SH",
-                    "trade_date": "20250630",
-                }
-            )
-            df['ts_code'] = df['con_code']
+            # 优先使用缓存，fallback到tushare
+            df = self._get_csi_components_cache("000300.SH")
+            if df is None:
+                df = pro_cached.run(
+                    func_name="index_weight", 
+                    func_kwargs={
+                        "index_code": "000300.SH",
+                        "trade_date": "20250630",
+                    }
+                )
+                df['ts_code'] = df['con_code']
+            # 确保ts_code列存在
+            if 'con_code' in df.columns and 'ts_code' not in df.columns:
+                df['ts_code'] = df['con_code']
         elif market == Market.CSI500:
-            df = pro_cached.run(
-                func_name="index_weight", 
-                func_kwargs={
-                    "index_code": "000905.SH",
-                    "trade_date": "20250630",
-                }
-            )
-            df['ts_code'] = df['con_code']
+            # 优先使用缓存，fallback到tushare
+            df = self._get_csi_components_cache("000905.SH")
+            if df is None:
+                df = pro_cached.run(
+                    func_name="index_weight", 
+                    func_kwargs={
+                        "index_code": "000905.SH",
+                        "trade_date": "20250630",
+                    }
+                )
+                df['ts_code'] = df['con_code']
+            # 确保ts_code列存在
+            if 'con_code' in df.columns and 'ts_code' not in df.columns:
+                df['ts_code'] = df['con_code']
         elif market == Market.CSI1000:
-            df = pro_cached.run(
-                func_name="index_weight", 
-                func_kwargs={
-                    "index_code": "000852.SH",
-                    "trade_date": "20250630",
-                }
-            )
-            df['ts_code'] = df['con_code']
+            # 优先使用缓存，fallback到tushare
+            df = self._get_csi_components_cache("000852.SH")
+            if df is None:
+                df = pro_cached.run(
+                    func_name="index_weight", 
+                    func_kwargs={
+                        "index_code": "000852.SH",
+                        "trade_date": "20250630",
+                    }
+                )
+                df['ts_code'] = df['con_code']
+            # 确保ts_code列存在
+            if 'con_code' in df.columns and 'ts_code' not in df.columns:
+                df['ts_code'] = df['con_code']
         elif market == Market.A_ETF:
             df = pro_cached.run(
                 func_name="fund_basic", 
@@ -790,13 +808,16 @@ class MarketManager:
     @lru_cache(maxsize=3)
     def get_stock_mapping(self, market_name: str):
         if market_name == "CN-Stock":
-            stock_df = pro_cached.run(
-                func_name="stock_basic",
-                func_kwargs={
-                    "exchange": "",
-                    "fields": 'ts_code,symbol,name,area,industry,list_date,list_status,fullname'
-                }
-            )
+            # 优先使用缓存，fallback到tushare
+            stock_df = self._get_stock_basic_cache()
+            if stock_df is None:
+                stock_df = pro_cached.run(
+                    func_name="stock_basic",
+                    func_kwargs={
+                        "exchange": "",
+                        "fields": 'ts_code,symbol,name,area,industry,list_date,list_status,fullname'
+                    }
+                )
             stock_name2code = {}
             stock_code2name = {}
             stock_info_columns = stock_df.columns.tolist()
@@ -815,6 +836,50 @@ class MarketManager:
                 stock_name2code[name] = code
 
         return stock_name2code, stock_code2name
+
+    def _get_stock_basic_cache(self):
+        """获取股票基本信息缓存，优先使用离线缓存"""
+        cache_path = Path(__file__).parent / 'cache' / 'market_manager' / 'stock_basic_cache.json'
+        
+        try:
+            if cache_path.exists():
+                print(f"使用股票基本信息缓存: {cache_path}")
+                with open(cache_path, 'r', encoding='utf-8') as f:
+                    cache_data = json.load(f)
+                return pd.DataFrame(cache_data)
+            else:
+                print(f"股票基本信息缓存不存在: {cache_path}")
+                return None
+        except Exception as e:
+            print(f"读取股票基本信息缓存失败: {e}")
+            return None
+
+    def _get_csi_components_cache(self, index_code: str):
+        """获取指数成分股缓存，优先使用离线缓存"""
+        cache_file_map = {
+            "000300.SH": "csi300_components_cache.json",
+            "000905.SH": "csi500_components_cache.json", 
+            "000852.SH": "csi1000_components_cache.json"
+        }
+        
+        cache_filename = cache_file_map.get(index_code)
+        if not cache_filename:
+            return None
+            
+        cache_path = Path(__file__).parent / 'cache' / 'market_manager' / cache_filename
+        
+        try:
+            if cache_path.exists():
+                print(f"使用指数成分股缓存: {cache_path}")
+                with open(cache_path, 'r', encoding='utf-8') as f:
+                    cache_data = json.load(f)
+                return pd.DataFrame(cache_data)
+            else:
+                print(f"指数成分股缓存不存在: {cache_path}")
+                return None
+        except Exception as e:
+            print(f"读取指数成分股缓存失败: {e}")
+            return None
 
     def get_total_namechange(self, market_name: str):
 
