@@ -422,14 +422,62 @@ class MarketManager:
         return df
 
     def get_trade_date(self, market_name: str="CN-Stock", verbose: bool = False):
-        if market_name in ["CN-Stock", "CSI300", "CSI500", "CSI1000"]:
-            trade_date = pro_cached.run(
-                func_name="trade_cal",
-                func_kwargs={
-                    "exchange": "SSE"
-                }
-            )
-        elif market_name == "CN-ETF":
+        """获取交易日历，优先级：缓存文件 -> AKShare -> Tushare"""
+        
+        # 方法1：尝试从缓存文件读取（A股相关市场）
+        if market_name in ["CN-Stock", "CN-ETF", "CSI300", "CSI500", "CSI1000"]:
+            try:
+                cache_file = Path(__file__).parent / "cache" / "market_manager" / "trade_calendar.json"
+                if cache_file.exists():
+                    with open(cache_file, 'r', encoding='utf-8') as f:
+                        trade_calendar_data = json.load(f)
+                    
+                    # 简化版：所有A股相关市场都使用同一个交易日历
+                    trade_dates = trade_calendar_data.get("trade_dates", [])
+                    
+                    if trade_dates:
+                        if verbose:
+                            print(f"从缓存文件获取{market_name}交易日历成功: {len(trade_dates)}个交易日")
+                        return trade_dates
+            except Exception as e:
+                if verbose:
+                    print(f"缓存文件读取失败: {e}")
+        
+        # 方法2：尝试使用AKShare
+        if market_name in ["CN-Stock", "CN-ETF", "CSI300", "CSI500", "CSI1000"]:
+            try:
+                import akshare as ak
+                if verbose:
+                    print(f"使用AKShare获取{market_name}交易日历...")
+                
+                trade_cal = ak.tool_trade_date_hist_sina()
+                trade_dates = []
+                
+                for date in trade_cal['trade_date']:
+                    if hasattr(date, 'strftime'):
+                        date_str = date.strftime('%Y%m%d')
+                    else:
+                        date_str = str(date).replace('-', '')
+                    
+                    # 只保留2024年以后的数据，不限制结束时间
+                    if date_str >= '20240101':
+                        trade_dates.append(date_str)
+                
+                trade_dates = sorted(list(set(trade_dates)))
+                if trade_dates:
+                    if verbose:
+                        print(f"AKShare获取{market_name}交易日历成功: {len(trade_dates)}个交易日")
+                    return trade_dates
+                    
+            except Exception as e:
+                if verbose:
+                    print(f"AKShare获取交易日历失败: {e}")
+        
+        # 方法3：最后使用Tushare作为fallback
+        if verbose:
+            print(f"使用Tushare获取{market_name}交易日历...")
+            
+        if market_name in ["CN-Stock", "CSI300", "CSI500", "CSI1000", "CN-ETF"]:
             trade_date = pro_cached.run(
                 func_name="trade_cal",
                 func_kwargs={
