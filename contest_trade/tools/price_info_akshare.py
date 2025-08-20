@@ -1,17 +1,13 @@
 """
 Price Info Tools
 """
-from pathlib import Path
-import sys
+
 import asyncio
 import pandas as pd
-sys.path.append(str(Path(__file__).parent.parent.resolve()))
-
 from pydantic import BaseModel, Field
 from datetime import datetime, timedelta
 from utils.akshare_utils import akshare_cached
 from tools.tool_utils import smart_tool
-
 
 class PriceInfoInput(BaseModel):
     market: str = Field(description="The market of the company.")
@@ -30,9 +26,9 @@ async def price_info(market: str, symbol: str, trigger_time: str=None) -> str:
             return {"error": "trigger_time is required"}
         # Normalize dates
         trigger_date_str = trigger_time.split(" ")[0]  # YYYY-MM-DD
-        # Akshare expects YYYYMMDD
-        end_date = trigger_date_str.replace("-", "")
-        start_date = (datetime.strptime(trigger_date_str, "%Y-%m-%d") - timedelta(days=30)).strftime("%Y%m%d")
+        trigger_date = datetime.strptime(trigger_date_str, "%Y-%m-%d")
+        end_date = (trigger_date - timedelta(days=1)).strftime("%Y%m%d")
+        start_date = (trigger_date - timedelta(days=30)).strftime("%Y%m%d")
 
         if market in ["CN-Stock", "HK-Stock"]:
             # Normalize symbol like 600519.SH -> 600519

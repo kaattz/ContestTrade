@@ -1,7 +1,6 @@
 """
 Data Summary Based On Akshare
 """
-import sys
 import asyncio
 import hashlib
 from pathlib import Path

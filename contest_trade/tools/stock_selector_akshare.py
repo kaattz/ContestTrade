@@ -8,15 +8,13 @@ import asyncio
 import pandas as pd
 import numpy as np
 from pydantic import BaseModel, Field
-from langchain_core.tools import tool
 
 from tools.tool_utils import smart_tool
 from utils.akshare_utils import akshare_cached
-from utils.date_utils import get_previous_trading_date
 from tools.tool_prompts import STOCK_FILTER_PROMPT_AKSHARE
 from models.llm_model import GLOBAL_LLM
 
-def get_basic_stock_df_akshare(trigger_time: str):
+def get_basic_stock_df_akshare(trigger_time: str):    
     try:
         df1 = akshare_cached.run(
             func_name="stock_zh_a_spot_em",
@@ -112,7 +110,7 @@ class StockSelectorInput(BaseModel):
     limit: int = Field(default=10, description="返回结果数量，默认10个, 最多20个。")
 
 
-@tool(
+@smart_tool(
     description="""
     选股工具（Akshare版本），基于自然语言查询筛选A股股票，支持通过财务指标等组合筛选股票。不可用于查询具体股票信息。
     例如
@@ -142,7 +140,9 @@ class StockSelectorInput(BaseModel):
     pre_close          float    昨收价                7.57
     change             float    涨跌额                0.0
     """,
-    args_schema=StockSelectorInput
+    args_schema=StockSelectorInput,
+    max_output_len=2000,
+    timeout_seconds=30.0
 )
 async def stock_selector(market: str, query: str, trigger_time: str, limit: int = 10) -> str:
     if market != "CN-Stock":
