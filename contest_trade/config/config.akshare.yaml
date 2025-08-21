@@ -39,7 +39,7 @@ research_agent_config:
   max_react_step: 10
   output_language: "中文"
   tools:
-    - "tools.stock_symbol_search.stock_symbol_search"
+    - "tools.stock_symbol_search_akshare.stock_symbol_search"
     - "tools.stock_selector_akshare.stock_selector"
     - "tools.corp_info_akshare.company_financial_info"
     - "tools.price_info_akshare.price_info"
