@@ -65,7 +65,7 @@ pip install -r requirements.txt
 
 | 配置项 (Key) | 描述 (Description) | 必需 (Required) |
 | :--- | :--- | :---: |
-| `TUSHARE_KEY` | Tushare 数据接口密钥 | ✅ |
+| `TUSHARE_KEY` | Tushare 数据接口密钥 | ❌ |
 | `BOCHA_KEY` | Bocha 搜索引擎密钥 | ❌ |
 | `SERP_KEY` | SerpAPI 搜索引擎密钥 | ❌ |
 | `LLM` | 用于通用任务的LLM API | ✅ |
@@ -74,7 +74,7 @@ pip install -r requirements.txt
 
 </div>
 
-> 注意：LLM API 和 VLM API 需要您自行申请，具体根据您使用的平台和模型填写URL、API Key以及模型名称。若您没有Tushare的API密钥，目前也支持在`contest_trade/config/config.akshare.yaml`中配置LLM API。
+> 注意：LLM API 和 VLM API 需要您自行申请，具体根据您使用的平台和模型填写URL、API Key以及模型名称。当前配置文件默认支持AKShare数据接口，您也可以自行配置Tushare接口及配套配置来获得更好的表现。
 
 ## Preference (选股偏好)
 
@@ -115,11 +115,6 @@ python -m cli.main run
 程序启动后，您将进入终端交互式界面，可以选择具体分析时间。
 <p align="center">
   <img src="assets/contest_trade_cli_start.jpg" style="width: 100%; height: auto;">
-</p>
-
-选择时间后，您需要进一步选择所采用的配置文件。
-<p align="center">
-  <img src="assets/contest_trade_cli_start_config.jpg" style="width: 100%; height: auto;">
 </p>
 
 验证完成后，您将会看到以下显示并进入运行界面。
