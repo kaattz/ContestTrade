@@ -20,6 +20,8 @@ vlm:
   api_key: null #YOUR_STEPFUN_API_KEY
   model_name: "step-1o-turbo-vision"
 
+
+
 data_agents_config:
   - agent_name: "sina_summary_agent"
     data_source_list: 
