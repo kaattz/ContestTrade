@@ -20,13 +20,13 @@ from data_source.data_source_base import DataSourceBase
 from loguru import logger
 
 
-class SinaMultiPageCrawler(DataSourceBase):
+class SinaNewsCrawl(DataSourceBase):
     def __init__(self, start_page=1, end_page=50):
         super().__init__("sina_news_crawl")
         self.start_page = start_page
         self.end_page = end_page
         # 使用你提供的完整URL格式，page/r/callback 将在请求时动态生成
-        self.base_url = "https://feed.mix.sina.com.cn/api/roll/get"
+        self.base_url = "http://feed.mix.sina.com.cn/api/roll/get"
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
             "Referer": "https://finance.sina.com.cn/",
@@ -357,7 +357,7 @@ class SinaMultiPageCrawler(DataSourceBase):
         return df
 
 if __name__ == "__main__":
-    crawler = SinaMultiPageCrawler(start_page=1, end_page=50)
+    crawler = SinaNewsCrawl(start_page=1, end_page=50)
     df = asyncio.run(crawler.get_data("2025-08-21 09:00:00"))
     print(len(df))
     # try:

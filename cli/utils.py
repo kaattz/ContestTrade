@@ -8,19 +8,20 @@ from contest_trade.models.llm_model import GLOBAL_LLM
 
 console = Console()
 
-def get_trigger_time() -> str:
-    """提示用户输入触发时间"""
-
+def get_trigger_time_and_config() -> Tuple[str, str]:
+    """提示用户输入触发时间和选择配置文件"""
+    
+    # 首先选择触发时间
     now = datetime.now()
-    options = [
-        f"今天A股盘前 ({now.strftime('%Y-%m-%d')} 09:00:00)",
-        f"今天美股盘前 ({now.strftime('%Y-%m-%d')} 15:30:00，夏令时美东时间03:30:00)",
-        f"今天美股盘前 ({now.strftime('%Y-%m-%d')} 16:30:00，冬令时美东时间04:30:00)"
+    time_options = [
+        f"A股当前时间 ({now.strftime('%Y-%m-%d %H:%M:%S')})",
+        # f"今天美股盘前 ({now.strftime('%Y-%m-%d')} 15:30:00，夏令时美东时间03:30:00)",
+        # f"今天美股盘前 ({now.strftime('%Y-%m-%d')} 16:30:00，冬令时美东时间04:30:00)"
     ]
     
-    choice = questionary.select(
-        "选择触发时间:",
-        choices=options,
+    time_choice = questionary.select(
+        "选择触发时间:（其他时间请期待后续版本）",
+        choices=time_options,
         style=questionary.Style([
             ("text", "fg:white"),
             ("highlighted", "fg:green bold"),
@@ -28,16 +29,43 @@ def get_trigger_time() -> str:
         ])
     ).ask()
     
-    if choice == options[0]:
-        return f"{now.strftime('%Y-%m-%d')} 09:00:00"
-    elif choice == options[1]:
-        return f"{now.strftime('%Y-%m-%d')} 15:30:00"
-    elif choice == options[2]:
-        return f"{now.strftime('%Y-%m-%d')} 16:30:00"
+    if time_choice == time_options[0]:
+        trigger_time = f"{now.strftime('%Y-%m-%d %H:%M:%S')}"
+    else:
+        trigger_time = f"{now.strftime('%Y-%m-%d %H:%M:%S')}"
+    
+    # 然后选择配置文件类型
+    config_options = [
+        "tushare配置 (默认配置，需要验证Tushare和LLM)",
+        "akshare配置 (使用akshare数据源，只需要验证LLM)"
+    ]
+    
+    config_choice = questionary.select(
+        "选择配置文件类型:",
+        choices=config_options,
+        style=questionary.Style([
+            ("text", "fg:white"),
+            ("highlighted", "fg:cyan bold"),
+            ("pointer", "fg:cyan"),
+        ])
+    ).ask()
+    
+    if config_choice == config_options[0]:
+        config_type = "tushare"
+    else:
+        config_type = "akshare"
+    
+    return trigger_time, config_type
+
+def get_trigger_time() -> str:
+    """兼容性函数：提示用户输入触发时间（保持向后兼容）"""
+    trigger_time, _ = get_trigger_time_and_config()
+    return trigger_time
 
 def validate_tushare_connection():
+    """验证Tushare连接"""
     try:
-        console.print("🔍 [cyan]正在验证必要配置1: Tushare配置...[/cyan]")
+        console.print("🔍 [cyan]正在验证Tushare配置...[/cyan]")
         ts.set_token(cfg.tushare_key)
         pro = ts.pro_api(cfg.tushare_key, timeout=3)
         end_date = datetime.now().strftime('%Y%m%d')
@@ -57,7 +85,7 @@ def validate_tushare_connection():
 def validate_llm_connection():
     """验证LLM连接"""
     try:
-        console.print("🔍 [cyan]正在验证必要配置2: LLM配置...[/cyan]")
+        console.print("🔍 [cyan]正在验证LLM配置...[/cyan]")
         test_messages = [
             {"role": "user", "content": "请回复'连接测试成功'，不要添加任何其他内容。"}
         ]
@@ -74,28 +102,37 @@ def validate_llm_connection():
         console.print(f"❌ [red]LLM连接失败: {str(e)}[/red]")
         return False
 
-def validate_required_services():
-    """验证所有必需的服务连接"""
+def validate_required_services(config_type: str = "tushare"):
+    """根据配置类型验证所需的服务连接"""
     console.print("\n" + "="*50)
-    console.print("🔧 [bold blue]正在验证必要系统配置...[/bold blue]")
+    console.print(f"🔧 [bold blue]正在验证{config_type}配置的必要系统配置...[/bold blue]")
     console.print("="*50)
     all_valid = True
     
-    # 验证Tushare
-    if not validate_tushare_connection():
+    if config_type == "tushare":
+        # 验证Tushare
+        if not validate_tushare_connection():
+            all_valid = False
+        
+        # 验证LLM
+        if not validate_llm_connection():
+            all_valid = False
+    elif config_type == "akshare":
+        # 只验证LLM
+        if not validate_llm_connection():
+            all_valid = False
+    else:
+        console.print(f"❌ [red]未知的配置类型: {config_type}[/red]")
         all_valid = False
     
-    # 验证LLM
-    if not validate_llm_connection():
-        all_valid = False
     console.print("="*50)
     
     if all_valid:
-        console.print("🎉 [bold green]所有必要系统配置验证通过，系统准备就绪！[/bold green]")
+        console.print(f"🎉 [bold green]{config_type}配置的所有必要系统配置验证通过，系统准备就绪！[/bold green]")
         console.print("="*50 + "\n")
         return True
     else:
-        console.print("⚠️  [bold red]必要系统配置验证失败，请检查配置文件[/bold red]")
+        console.print(f"⚠️  [bold red]{config_type}配置的必要系统配置验证失败，请检查配置文件[/bold red]")
         console.print("="*50 + "\n")
         return False
 
@@ -127,3 +164,4 @@ def extract_signal_info(signal: Dict) -> Dict:
         "probability": signal.get("probability", "N/A"),
         "has_opportunity": signal.get("has_opportunity", "N/A"),
     }
+

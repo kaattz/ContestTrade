@@ -18,7 +18,7 @@ from rich.text import Text
 from rich.align import Align
 from rich import box
 
-from .utils import get_trigger_time, validate_required_services
+from .utils import get_trigger_time_and_config, get_trigger_time, validate_required_services
 from .static.report_template import display_final_report_interactive
 from contest_trade.config.config import cfg, PROJECT_ROOT
 sys.path.append(str(PROJECT_ROOT))
@@ -762,12 +762,13 @@ def display_detailed_report(final_state: Dict):
 @app.command()
 def run(
     trigger_time: Optional[str] = typer.Option(None, "--time", "-t", help="触发时间 (YYYY-MM-DD HH:MM:SS)"),
+    config_type: Optional[str] = typer.Option(None, "--config", "-c", help="配置类型 (tushare/akshare)"),
 ):
     """运行ContestTrade分析"""
 
-    # 获取触发时间
-    if not trigger_time:
-        trigger_time = get_trigger_time()
+    # 获取触发时间和配置类型
+    if not trigger_time or not config_type:
+        trigger_time, config_type = get_trigger_time_and_config()
     
     # 验证触发时间
     if not trigger_time:
@@ -780,9 +781,14 @@ def run(
         console.print("[red]触发时间格式错误，请使用 YYYY-MM-DD HH:MM:SS 格式[/red]")
         raise typer.Exit(1)
     
+    # 根据配置类型加载相应的配置文件
+    if not load_config_by_type(config_type):
+        console.print(f"[red]加载{config_type}配置失败[/red]")
+        raise typer.Exit(1)
+    
     # 验证必需的服务连接
-    if not validate_required_services():
-        console.print("[red]系统验证失败，无法启动分析[/red]")
+    if not validate_required_services(config_type):
+        console.print(f"[red]{config_type}配置的系统验证失败，无法启动分析[/red]")
         raise typer.Exit(1)
     
     # 主循环
@@ -800,9 +806,12 @@ def run(
         if isinstance(result, tuple):
             final_state, action = result
             if action == "new_analysis":
-                trigger_time = get_trigger_time()
-                if not validate_required_services():
-                    console.print("[red]系统验证失败，无法启动分析[/red]")
+                trigger_time, config_type = get_trigger_time_and_config()
+                if not load_config_by_type(config_type):
+                    console.print(f"[red]加载{config_type}配置失败[/red]")
+                    break
+                if not validate_required_services(config_type):
+                    console.print(f"[red]{config_type}配置的系统验证失败，无法启动分析[/red]")
                     break
                 continue
             elif action == "quit":
@@ -814,6 +823,38 @@ def run(
         break
     
     console.print("[green]感谢使用ContestTrade![/green]")
+
+def load_config_by_type(config_type: str) -> bool:
+    """根据配置类型加载相应的配置文件"""
+    try:
+        from pathlib import Path
+        
+        # 根据配置类型设置配置文件路径
+        project_root = Path(__file__).parent.parent
+        if config_type == "akshare":
+            config_file = project_root / "contest_trade" / "config" / "config.akshare.yaml"
+        else:  # tushare
+            config_file = project_root / "config.yaml"
+        
+        if not config_file.exists():
+            console.print(f"[red]配置文件不存在: {config_file}[/red]")
+            return False
+        
+        # 设置环境变量指定配置文件
+        import os
+        os.environ['CONTEST_TRADE_CONFIG'] = str(config_file)
+        
+        # 重新加载配置
+        global cfg
+        from contest_trade.config.config import cfg
+        cfg.reload_config(str(config_file))
+        
+        console.print(f"[green]✅ 成功加载{config_type}配置文件: {config_file.name}[/green]")
+        return True
+        
+    except Exception as e:
+        console.print(f"[red]加载配置文件失败: {str(e)}[/red]")
+        return False
 
 @app.command()
 def config():
@@ -852,7 +893,7 @@ def version():
     console.print("[bold blue]ContestTrade[/bold blue]")
     console.print("基于内部竞赛机制的Multi-Agent交易系统")
     console.print("Multi-Agent Trading System Based on Internal Contest Mechanism")
-    console.print(f"版本: 1.0.0")
+    console.print(f"版本: 1.1")
 
 if __name__ == "__main__":
     app()
