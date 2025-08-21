@@ -8,10 +8,8 @@ from contest_trade.models.llm_model import GLOBAL_LLM
 
 console = Console()
 
-def get_trigger_time_and_config() -> Tuple[str, str]:
-    """提示用户输入触发时间和选择配置文件"""
-    
-    # 首先选择触发时间
+def get_trigger_time() -> str:
+    """提示用户输入触发时间"""
     now = datetime.now()
     time_options = [
         f"A股当前时间 ({now.strftime('%Y-%m-%d %H:%M:%S')})",
@@ -30,37 +28,9 @@ def get_trigger_time_and_config() -> Tuple[str, str]:
     ).ask()
     
     if time_choice == time_options[0]:
-        trigger_time = f"{now.strftime('%Y-%m-%d %H:%M:%S')}"
+        return f"{now.strftime('%Y-%m-%d %H:%M:%S')}"
     else:
-        trigger_time = f"{now.strftime('%Y-%m-%d %H:%M:%S')}"
-    
-    # 然后选择配置文件类型
-    config_options = [
-        "tushare配置 (默认配置，需要验证Tushare和LLM)",
-        "akshare配置 (使用akshare数据源，只需要验证LLM)"
-    ]
-    
-    config_choice = questionary.select(
-        "选择配置文件类型:",
-        choices=config_options,
-        style=questionary.Style([
-            ("text", "fg:white"),
-            ("highlighted", "fg:cyan bold"),
-            ("pointer", "fg:cyan"),
-        ])
-    ).ask()
-    
-    if config_choice == config_options[0]:
-        config_type = "tushare"
-    else:
-        config_type = "akshare"
-    
-    return trigger_time, config_type
-
-def get_trigger_time() -> str:
-    """兼容性函数：提示用户输入触发时间（保持向后兼容）"""
-    trigger_time, _ = get_trigger_time_and_config()
-    return trigger_time
+        return f"{now.strftime('%Y-%m-%d %H:%M:%S')}"
 
 def validate_tushare_connection():
     """验证Tushare连接"""
@@ -102,37 +72,40 @@ def validate_llm_connection():
         console.print(f"❌ [red]LLM连接失败: {str(e)}[/red]")
         return False
 
-def validate_required_services(config_type: str = "tushare"):
-    """根据配置类型验证所需的服务连接"""
+def validate_required_services():
+    """根据配置文件中的tushare_key自动决定验证策略"""
     console.print("\n" + "="*50)
-    console.print(f"🔧 [bold blue]正在验证{config_type}配置的必要系统配置...[/bold blue]")
+    console.print("🔧 [bold blue]正在验证必要系统配置...[/bold blue]")
     console.print("="*50)
     all_valid = True
     
-    if config_type == "tushare":
+    # 检查tushare_key是否为空
+    tushare_key = getattr(cfg, 'tushare_key', '')
+    has_tushare_key = tushare_key and tushare_key.strip() and tushare_key != "YOUR_TUSHARE_KEY"
+    
+    if has_tushare_key:
+        console.print("🔍 [cyan]检测到Tushare密钥，将验证Tushare连接...[/cyan]")
         # 验证Tushare
         if not validate_tushare_connection():
             all_valid = False
-        
-        # 验证LLM
-        if not validate_llm_connection():
-            all_valid = False
-    elif config_type == "akshare":
-        # 只验证LLM
-        if not validate_llm_connection():
-            all_valid = False
     else:
-        console.print(f"❌ [red]未知的配置类型: {config_type}[/red]")
+        console.print("ℹ️  [yellow]未检测到Tushare密钥，跳过Tushare验证[/yellow]")
+    
+    # 始终验证LLM
+    if not validate_llm_connection():
         all_valid = False
     
     console.print("="*50)
     
     if all_valid:
-        console.print(f"🎉 [bold green]{config_type}配置的所有必要系统配置验证通过，系统准备就绪！[/bold green]")
+        if has_tushare_key:
+            console.print("🎉 [bold green]所有必要系统配置验证通过（包含Tushare），系统准备就绪！[/bold green]")
+        else:
+            console.print("🎉 [bold green]所有必要系统配置验证通过（不含Tushare），系统准备就绪！[/bold green]")
         console.print("="*50 + "\n")
         return True
     else:
-        console.print(f"⚠️  [bold red]{config_type}配置的必要系统配置验证失败，请检查配置文件[/bold red]")
+        console.print("⚠️  [bold red]必要系统配置验证失败，请检查配置文件[/bold red]")
         console.print("="*50 + "\n")
         return False
 

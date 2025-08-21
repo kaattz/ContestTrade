@@ -21,31 +21,61 @@ vlm:
   model_name: "step-1o-turbo-vision"
 
 data_agents_config:
-  - agent_name: "thx_summary_agent"
-    data_source_list: 
-      - "data_source.thx_news_crawl.ThxNewsCrawl"
   - agent_name: "sina_summary_agent"
     data_source_list: 
       - "data_source.sina_news_crawl.SinaNewsCrawl"
+  - agent_name: "thx_summary_agent"
+    data_source_list: 
+      - "data_source.thx_news_crawl.ThxNewsCrawl"
   - agent_name: "price_market_agent"
     data_source_list: 
-      - "data_source.price_market.PriceMarket"
+      - "data_source.price_market_akshare.PriceMarketAkshare"
   - agent_name: "hot_money_agent"
     data_source_list: 
-      - "data_source.hot_money.HotMoney"
+      - "data_source.hot_money_akshare.HotMoneyAkshare"
 
 research_agent_config:
   belief_list_path: "config/belief_list.json"
   max_react_step: 10
   output_language: "中文"
   tools:
-    - "tools.stock_symbol_search.stock_symbol_search"
-    - "tools.stock_selector.stock_selector"
-    - "tools.corp_info.company_financial_info"
-    - "tools.price_info.price_info"
+    - "tools.stock_symbol_search_akshare.stock_symbol_search"
+    - "tools.stock_selector_akshare.stock_selector"
+    - "tools.corp_info_akshare.company_financial_info"
+    - "tools.price_info_akshare.price_info"
     - "tools.search_web.search_web"
-    - "tools.stock_summary.stock_summary"
+    - "tools.stock_summary_akshare.stock_summary"
     - "tools.final_report.final_report"
+
+# Tushare配套配置如下，请自行设置
+# The configuration for Tushare is as follows, please set it up yourself.
+
+# data_agents_config:
+#   - agent_name: "thx_summary_agent"
+#     data_source_list: 
+#       - "data_source.thx_news_crawl.ThxNewsCrawl"
+#   - agent_name: "sina_summary_agent"
+#     data_source_list: 
+#       - "data_source.sina_news_crawl.SinaNewsCrawl"
+#   - agent_name: "price_market_agent"
+#     data_source_list: 
+#       - "data_source.price_market.PriceMarket"
+#   - agent_name: "hot_money_agent"
+#     data_source_list: 
+#       - "data_source.hot_money.HotMoney"
+
+# research_agent_config:
+#   belief_list_path: "config/belief_list.json"
+#   max_react_step: 10
+#   output_language: "中文"
+#   tools:
+#     - "tools.stock_symbol_search.stock_symbol_search"
+#     - "tools.stock_selector.stock_selector"
+#     - "tools.corp_info.company_financial_info"
+#     - "tools.price_info.price_info"
+#     - "tools.search_web.search_web"
+#     - "tools.stock_summary.stock_summary"
+#     - "tools.final_report.final_report"
 
 system_language: "中文"
 
