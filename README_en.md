@@ -73,6 +73,7 @@ Edit the `config.yaml` file and enter your API keys. The table below lists all r
 | `VLM_API_KEY`            | VLM API key for visual analysis            | No       |
 | `VLM_BASE_URL`           | VLM API base URL for visual analysis       | No       |
 
+> Note：LLM API and VLM API require you to apply for them yourself. Specifically, you need to fill in the URL, API Key, and model name based on the platform and model you are using. If you do not have a Tushare API key, it is currently also supported to configure the LLM API in `contest_trade/config/config.akshare.yaml`.
 
 ## Preference
 
@@ -108,9 +109,19 @@ You can easily start ContestTrade using the Command Line Interface (CLI).
 python -m cli.main run
 ```
 
-After the program starts, you'll enter the interactive terminal interface and can input the analysis time as prompted.
+After the program starts, you'll enter the interactive terminal interface and can select the time as prompted.
 <p align="center">
   <img src="assets/contest_trade_cli_start.jpg" style="width: 100%; height: auto;">
+</p>
+
+After selecting the time, you need to further choose the profile to be used.
+<p align="center">
+  <img src="assets/contest_trade_cli_start_config.jpg" style="width: 100%; height: auto;">
+</p>
+
+After the verification is complete, you will see the following display and enter the running interface.
+<p align="center">
+  <img src="assets/contest_trade_cli_start_test.jpg" style="width: 100%; height: auto;">
 </p>
 
 After all agents have finished running, you can view the signals they provide in the results summary.
