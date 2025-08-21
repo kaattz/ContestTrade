@@ -197,48 +197,76 @@ class ThxNewsCrawl(DataSourceBase):
                     *[f"https://stock.10jqka.com.cn/hsdp_list/index_{i}.shtml" for i in range(2, 21)],
                 ]
                 
+                # Combine all URLs
                 page_urls = company_news_urls + hsdp_urls
                 logger.info(f"Starting frontend crawl for {len(page_urls)} pages")
                 
                 results = await crawler.arun_many(urls=page_urls)
+                logger.info(f"✅ Frontend crawl API calls completed, processing {len(results or [])} responses")
 
+                # Merge records from all pages
                 all_records = []
-                for res in (results or []):
+                page_records = []
+                for i, res in enumerate(results or []):
+                    page_markdown = getattr(res, "markdown", "")
+                    page_records_count = len(self.extract_company_news_from_markdown(page_markdown))
+                    page_records.append(page_records_count)
                     all_records.extend(
-                        self.extract_company_news_from_markdown(getattr(res, "markdown", ""))
+                        self.extract_company_news_from_markdown(page_markdown)
                     )
                 
                 logger.info(f"Frontend crawl completed, got {len(all_records)} records")
                 return all_records
                 
         except Exception as e:
-            logger.error(f"Frontend crawling failed: {e}")
+            logger.error(f"❌ Frontend crawling failed: {e}")
             return []
 
     async def get_data(self, trigger_time: str) -> pd.DataFrame:
         tasks = [
-            asyncio.to_thread(self.crawl_multiple_pages),
-            self.crawl_frontend_pages()
+            asyncio.to_thread(self.crawl_multiple_pages),  # API爬取
+            self.crawl_frontend_pages()  # 前端爬取
         ]
         
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
+        # 处理API爬取结果
         api_news_data = []
         if isinstance(results[0], list):
             api_news_data = results[0]
+            logger.info(f"✅ API crawling completed successfully: {len(api_news_data)} records")
         elif isinstance(results[0], Exception):
-            logger.error(f"API crawling failed: {results[0]}")
+            logger.error(f"❌ API crawling failed: {results[0]}")
+            logger.info("⚠️ Will continue with frontend data only...")
+        else:
+            logger.warning(f"⚠️ API crawling returned unexpected type: {type(results[0])}")
         
+        # 处理前端爬取结果
         frontend_news_data = []
         if isinstance(results[1], list):
             frontend_news_data = results[1]
+            logger.info(f"✅ Frontend crawling completed successfully: {len(frontend_news_data)} records")
         elif isinstance(results[1], Exception):
-            logger.error(f"Frontend crawling failed: {results[1]}")
+            logger.error(f"❌ Frontend crawling failed: {results[1]}")
+            logger.info("⚠️ Will continue with API data only...")
+        else:
+            logger.warning(f"⚠️ Frontend crawling returned unexpected type: {type(results[1])}")
         
+        # 合并所有数据
         all_news_data = api_news_data + frontend_news_data
         
-        if not all_news_data:
-            logger.warning("没有获取到任何数据")
+        logger.info("📈 Data collection summary:")
+        logger.info(f"  - API records: {len(api_news_data)}")
+        logger.info(f"  - Frontend records: {len(frontend_news_data)}")
+        logger.info(f"  - Combined total: {len(all_news_data)}")
+        
+        # 检查是否至少有一个数据源成功
+        if not api_news_data and not frontend_news_data:
+            error_msg = "❌ Both API and frontend crawling failed - no data available"
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
+        elif not all_news_data:
+            logger.warning("⚠️ No data collected from any source")
             return pd.DataFrame(columns=['title', 'content', 'pub_time', 'url'])
         
         seen_urls = set()
@@ -274,21 +302,29 @@ class ThxNewsCrawl(DataSourceBase):
         
         df = df[keep_cols].copy()
         
-        logger.info(f"get thx news until {trigger_time} success. Total {len(df)} rows")
+        # 显示最终数据来源统计
+        if api_news_data and frontend_news_data:
+            logger.info(f"🎉 Successfully collected data from both sources until {trigger_time}")
+        elif api_news_data:
+            logger.info(f"🎉 Successfully collected data from API only until {trigger_time}")
+        elif frontend_news_data:
+            logger.info(f"🎉 Successfully collected data from frontend only until {trigger_time}")
+        
+        logger.info(f"Final result: {len(df)} rows after deduplication and time filtering")
         return df
 
 
 if __name__ == "__main__":
     crawler = ThxNewsCrawl(max_pages=5, enable_frontend_crawl=True)
-    df = asyncio.run(crawler.get_data("2025-08-20 11:00:00"))
+    df = asyncio.run(crawler.get_data("2025-08-21 09:00:00"))
     print(f"Total records: {len(df)}")
     print(df.head())
-    try:
-        output_path = os.path.join(os.path.dirname(__file__), "10jqk_news_crawl.json")
-        df.to_json(output_path, orient="records", force_ascii=False, date_format="iso")
-        print(f"Saved JSON to: {output_path}")
-    except Exception as e:
-        print(f"Failed to save JSON: {e}")
+    # try:
+    #     output_path = os.path.join(os.path.dirname(__file__), "10jqk_news_crawl.json")
+    #     df.to_json(output_path, orient="records", force_ascii=False, date_format="iso")
+    #     print(f"Saved JSON to: {output_path}")
+    # except Exception as e:
+    #     print(f"Failed to save JSON: {e}")
 
 
 

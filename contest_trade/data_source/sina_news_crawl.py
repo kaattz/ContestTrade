@@ -20,13 +20,13 @@ from data_source.data_source_base import DataSourceBase
 from loguru import logger
 
 
-class SinaNewsCrawl(DataSourceBase):
+class SinaMultiPageCrawler(DataSourceBase):
     def __init__(self, start_page=1, end_page=50):
         super().__init__("sina_news_crawl")
         self.start_page = start_page
         self.end_page = end_page
         # 使用你提供的完整URL格式，page/r/callback 将在请求时动态生成
-        self.base_url = "http://feed.mix.sina.com.cn/api/roll/get"
+        self.base_url = "https://feed.mix.sina.com.cn/api/roll/get"
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
             "Referer": "https://finance.sina.com.cn/",
@@ -309,8 +309,25 @@ class SinaNewsCrawl(DataSourceBase):
 
     async def get_data(self, trigger_time: str) -> pd.DataFrame:
         self.all_items = []  # 清空累积的数据
-        items = await self.crawl_all_pages()
+        
+        try:
+            items = await self.crawl_all_pages()
+        except Exception as e:
+            logger.error(f"❌ Failed to crawl pages: {e}")
+            # 即使爬取失败，也尝试返回空DataFrame而不是报错
+            logger.info("⚠️ Returning empty DataFrame due to crawl failure")
+            return pd.DataFrame(columns=['title', 'content', 'pub_time', 'url'])
+        
+        # 检查是否有数据
+        if not items:
+            logger.warning("⚠️ No items collected from crawling")
+            return pd.DataFrame(columns=['title', 'content', 'pub_time', 'url'])
+        
+        logger.info(f"📊 Processing {len(items)} collected items...")
+        
         df = pd.DataFrame(items)
+        
+        # 处理时间字段
         if not df.empty and 'publish_time' in df.columns:
             df['publish_time'] = pd.to_datetime(df['publish_time'], errors='coerce')
             end_dt = pd.to_datetime(trigger_time, errors='coerce')
@@ -329,18 +346,20 @@ class SinaNewsCrawl(DataSourceBase):
 
         df['pub_time'] = df['pub_time'].fillna('')
 
+        # 确保所有必需的列都存在
         keep_cols = ['title', 'content', 'pub_time', 'url']
         for col in keep_cols:
             if col not in df.columns:
                 df[col] = ""
+
         df = df[keep_cols].copy()
         logger.info(f"get sina news until {trigger_time} success. Total {len(df)} rows")
         return df
 
 if __name__ == "__main__":
-    crawler = SinaNewsCrawl(start_page=1, end_page=50)
-    df = asyncio.run(crawler.get_data("2025-08-19 10:00:00"))
-    print(df)
+    crawler = SinaMultiPageCrawler(start_page=1, end_page=50)
+    df = asyncio.run(crawler.get_data("2025-08-21 09:00:00"))
+    print(len(df))
     # try:
     #     output_path = os.path.join(os.path.dirname(__file__), "sina_news_crawl.json")
     #     df.to_json(output_path, orient="records", force_ascii=False, date_format="iso")
