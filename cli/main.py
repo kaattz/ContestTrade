@@ -780,7 +780,7 @@ def run(
         console.print("[red]触发时间格式错误，请使用 YYYY-MM-DD HH:MM:SS 格式[/red]")
         raise typer.Exit(1)
     
-    # 验证必需的服务连接
+    # 验证必需的服务连接（自动根据tushare_key决定验证策略）
     if not validate_required_services():
         console.print("[red]系统验证失败，无法启动分析[/red]")
         raise typer.Exit(1)
@@ -852,7 +852,7 @@ def version():
     console.print("[bold blue]ContestTrade[/bold blue]")
     console.print("基于内部竞赛机制的Multi-Agent交易系统")
     console.print("Multi-Agent Trading System Based on Internal Contest Mechanism")
-    console.print(f"版本: 1.0.0")
+    console.print(f"版本: 1.1")
 
 if __name__ == "__main__":
     app()

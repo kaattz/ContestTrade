@@ -86,3 +86,50 @@ def filter_stock(stock_dataframe: pd.DataFrame) -> pd.DataFrame:
 {query}
 </query>
 """
+
+STOCK_FILTER_PROMPT_AKSHARE = """
+<stock_dataframe_schema>
+字段名              类型      含义                example
+ts_code            str      股票代码              000001.SZ
+name               str      股票名称              平安银行
+industry           str      行业                  银行
+close              float    最新价                12.07
+pct_chg            float    涨跌幅（%）           2.06
+change             float    涨跌额                0.0
+vol                float    成交量                3315206
+amount             float    成交额                2515293334
+amplitude          float    振幅                  0.79
+high               float    最高价                7.62
+low                float    最低价                7.56
+open               float    开盘价                7.58
+pre_close          float    昨收价                7.57
+volume_ratio       float    量比                  1.08
+turnover_rate      float    换手率（%）           2.06
+pe                 float    市盈率（动态）        21.22
+pb                 float    市净率                2.16
+total_share        float    总股本（万股）        34813.69
+float_share        float    流通股本（万股）      32001.01
+total_mv           float    总市值（万元）        470332.97
+circ_mv            float    流通市值（万元）      432333.64
+</stock_dataframe_schema>
+
+<task>
+根据用户的query，生成一个函数用于筛选股票。这个函数会被python执行器执行。因此只需要生成函数即可。
+- 生成的代码满足output_template的模板。严格按照模板生成，不要有任何其他内容。
+- 最好是按照某个数值字段进行排序，系统会默认选取排序后的前面30只股票。
+- 输出字段必须包含：ts_code, name, industry，以及进行过筛选的关键字段。
+- 如果查询涉及特定行业，请确保使用industry字段进行筛选。
+</task>
+
+<output_template>
+```python
+def filter_stock(stock_dataframe: pd.DataFrame) -> pd.DataFrame:
+    # your filter code here
+    return filtered_df
+```
+</output_template>
+
+<query>
+{query}
+</query>
+"""

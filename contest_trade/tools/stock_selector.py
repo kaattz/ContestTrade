@@ -7,15 +7,12 @@ import json
 import asyncio
 import pandas as pd
 from pydantic import BaseModel, Field
-from langchain_core.tools import tool
 
 from tools.tool_utils import smart_tool
 from utils.tushare_utils import pro_cached
 from utils.date_utils import get_previous_trading_date
 from tools.tool_prompts import STOCK_FILTER_PROMPT
 from models.llm_model import GLOBAL_LLM
-
-
 
 def get_basic_stock_df(trggler_time: str):
     trade_date = get_previous_trading_date(trggler_time)

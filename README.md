@@ -65,7 +65,7 @@ pip install -r requirements.txt
 
 | 配置项 (Key) | 描述 (Description) | 必需 (Required) |
 | :--- | :--- | :---: |
-| `TUSHARE_KEY` | Tushare 数据接口密钥 | ✅ |
+| `TUSHARE_KEY` | Tushare 数据接口密钥 | ❌ |
 | `BOCHA_KEY` | Bocha 搜索引擎密钥 | ❌ |
 | `SERP_KEY` | SerpAPI 搜索引擎密钥 | ❌ |
 | `LLM` | 用于通用任务的LLM API | ✅ |
@@ -74,7 +74,7 @@ pip install -r requirements.txt
 
 </div>
 
-> 注意：LLM API 和 VLM API 需要您自行申请，具体根据您使用的平台和模型填写URL、API Key以及模型名称。
+> 注意：LLM API 和 VLM API 需要您自行申请，具体根据您使用的平台和模型填写URL、API Key以及模型名称。当前配置文件默认支持AKShare数据接口，您也可以自行配置Tushare接口及配套配置来获得更好的表现。
 
 ## Preference (选股偏好)
 
@@ -112,9 +112,14 @@ pip install -r requirements.txt
 python -m cli.main run
 ```
 
-程序启动后，您将进入终端交互式界面，可以根据提示输入分析时间。
+程序启动后，您将进入终端交互式界面，可以选择具体分析时间。
 <p align="center">
   <img src="assets/contest_trade_cli_start.jpg" style="width: 100%; height: auto;">
+</p>
+
+验证完成后，您将会看到以下显示并进入运行界面。
+<p align="center">
+  <img src="assets/contest_trade_cli_start_test.jpg" style="width: 100%; height: auto;">
 </p>
 
 所有Agent运行完成后可在结果摘要中查看Agent给出的信号。
@@ -139,11 +144,11 @@ python -m cli.main run
 
 ### 项目路线图 (Roadmap)
 
-**V0.1.0 (当前-开发中): 框架稳定性增强 & 核心体验优化**
-- [ ] 核心数据源模块解耦，实现多数据源的adaptor (`data-provider` refactor)
-- [ ] 优化CLI日志与交互体验
+**V1.1 (Finished): 框架稳定性增强 & 核心体验优化**
+- [✓] 核心数据源模块解耦，实现多数据源的adaptor (`data-provider` refactor)
+- [✓] 优化CLI日志与交互体验
 
-**V0.2.0 (计划中): 市场与功能拓展**
+**V2.0 (开发中): 市场与功能拓展**
 - [ ] 接入 **美股** 市场数据
 - [ ] 引入更丰富的因子与信号来源
 
