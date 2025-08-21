@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="contesttrade-cli",
-    version="1.0.0",
+    version="1.1",
     description="ContestTrade: 基于内部竞赛机制的Multi-Agent交易系统",
     author="ContestTrade Team",
     packages=find_packages(),

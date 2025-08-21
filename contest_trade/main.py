@@ -518,17 +518,20 @@ class SimpleTradeCompany:
             yield event
 
 if __name__ == "__main__":
+    from datetime import datetime
     async def main():
         company = SimpleTradeCompany()
         
         # 使用事件流运行
         print("🚀 开始测试Simplified TradeCompany事件流...")
         print("=" * 60)
+
+        trigger_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         company_events = []
         final_state = None
         
-        async for event in company.run_company_with_events("2025-08-12 09:00:00"):
+        async for event in company.run_company_with_events(trigger_time):
             company_events.append(event)
             
             # 监听并打印事件
@@ -576,31 +579,4 @@ if __name__ == "__main__":
             print(f"   无最终状态数据")
         print(f"   公司事件总数: {len(company_events)}")
         
-        # 显示有效信号和调整权重
-        if final_state:
-            step_results = final_state.get('step_results', {})
-            judger_result = step_results.get("judger_critic", {})
-            
-            print(f"\n🎯 有效信号和调整权重:")
-            
-            # 从JudgerCritic结果中获取权重信息
-            optimized_weights = judger_result.get('optimized_weights', {})
-            
-            if optimized_weights:
-                # 使用子脚本函数获取信号详细信息和格式化输出
-                
-                trigger_time = final_state.get('trigger_time', '2025-07-31 09:00:00')
-                signal_names = list(optimized_weights.keys())
-                
-                # 使用正确的workspace目录
-                signal_details = get_signal_details(trigger_time, "/Users/rayjiang/Desktop/Stepfun/trade-agent/trade_agent", signal_names)
-                output_lines = format_signal_output(optimized_weights, signal_details)
-                
-                for line in output_lines:
-                    print(line)
-            else:
-                print("   未找到权重优化结果")
-        else:
-            print("   无最终状态数据")
-    
     asyncio.run(main()) 

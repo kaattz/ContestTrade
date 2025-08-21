@@ -115,7 +115,14 @@ class StockSelectorInput(BaseModel):
     选股工具（Akshare版本），基于自然语言查询筛选A股股票，支持通过财务指标等组合筛选股票。不可用于查询具体股票信息。
     例如
     - 行业 + 财务指标筛选
-    - 示例："新能源汽车市值最大的3家"、"市值超过1000亿的银行股"、"PE小于20银行股" 
+    - 示例："银行市值最大的3家"、"市值超过1000亿的银行股"、"PE小于20银行股" 
+    - 注意：行业industry目前只支持：['未知', '半导体', '消费电子', '生物制品', '光伏设备', '医疗器械', '交运设备', '家电行业', '软件开发', 
+    '食品饮料', '小金属', '能源金属', '酿酒行业', '非金属材料', '医疗服务', '电子元件', '家用轻工', '计算机设备', '银行', '证券', '电力行业', '船舶制造',
+      '航运港口', '有色金属', '煤炭行业', '旅游酒店', '电网设备', '工程建设', '石油行业', '铁路公路', '采掘行业', '通信服务', '电源设备', '汽车零部件', '汽车整车', 
+      '保险', '医药商业', '航空机场', '工程机械', '物流行业', '化学原料', '房地产开发', '航天航空', '互联网服务', '燃气', '光学光电子', '综合行业', '玻璃玻纤', '水泥建材',
+        '电机', '贵金属', '通信设备', '中药', '商业百货', '化纤行业', '化学制品', '化学制药', '钢铁行业']
+    - 如果行业不在上述列表中，则直接返回空结果。
+
     具体可以筛选的字段如下：             
     字段名              类型      含义                example
     ts_code            str      股票代码              000001.SZ
@@ -150,6 +157,7 @@ async def stock_selector(market: str, query: str, trigger_time: str, limit: int 
     
     try:
         stock_df = get_basic_stock_df_akshare(trigger_time)
+        print(stock_df['industry'].unique().tolist())
         
         if stock_df.empty:
             return f"Error: Failed to fetch stock data from akshare."
@@ -157,6 +165,7 @@ async def stock_selector(market: str, query: str, trigger_time: str, limit: int 
         prompt = STOCK_FILTER_PROMPT_AKSHARE.format(query=query)
         messages = [{"role": "user", "content": prompt}]
         response = await GLOBAL_LLM.a_run(messages, verbose=False, thinking=False)
+        print(response.content)
 
         code_match = re.search(r"```python(.*?)```", response.content, re.DOTALL)
         if not code_match:
@@ -188,7 +197,7 @@ async def stock_selector(market: str, query: str, trigger_time: str, limit: int 
 if __name__ == "__main__":
     result = asyncio.run(stock_selector.ainvoke({
         "market": "CN-Stock",
-        "query": "市值最大的5只银行股",
+        "query": "市值最大的5只光刻机股",
         "trigger_time": "2025-08-20 09:00:00",
         "limit": 5
     }))

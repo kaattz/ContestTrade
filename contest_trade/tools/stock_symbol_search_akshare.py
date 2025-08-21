@@ -223,13 +223,13 @@ async def stock_symbol_search(
 if __name__ == "__main__":
     # Test the tool
     async def test():
-        result = await stock_symbol_search(
-            market="CN-Stock",
-            queries=["茅台", "平安银行", "000001", "腾讯"],
-            trigger_time="2025-08-21 12:00:00",
-            limit_per_query=3,
-            match_mode="best"
-        )
+        result = await stock_symbol_search.ainvoke({
+            "market": "CN-Stock",
+            "queries": ["茅台", "平安银行", "000001", "腾讯"],
+            "trigger_time": "2025-08-21 12:00:00",
+            "limit_per_query": 3,
+            "match_mode": "best"
+        })
         print(json.dumps(result, indent=2, ensure_ascii=False))
     
     asyncio.run(test())

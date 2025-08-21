@@ -1,23 +1,35 @@
-tushare_key: "" #YOUR_TUSHARE_KEY
-bocha_key: "" #YOUR_BOCHA_KEY
-serp_key: "" #YOUR_SERP_KEY
+#YOUR_TUSHARE_KEY
+tushare_key: "" 
 
-fmp_key: "" #YOUR_FMP_KEY
-finnhub_key: "" #YOUR_FINNHUB_KEY
+#YOUR_BOCHA_KEY
+bocha_key: "" 
+
+#YOUR_SERP_KEY
+serp_key: "" 
+
+#YOUR_FMP_KEY
+fmp_key: "" 
+
+#YOUR_FINNHUB_KEY
+finnhub_key: "" 
+
 
 llm:
   base_url: "https://api.deepseek.com"
-  api_key: null #YOUR_DEEPSEEK_API_KEY
+  #YOUR_DEEPSEEK_API_KEY
+  api_key: null 
   model_name: "deepseek-chat"
 
 llm_thinking:
   base_url: "https://api.deepseek.com"
-  api_key: null #YOUR_DEEPSEEK_API_KEY
+  #YOUR_DEEPSEEK_API_KEY
+  api_key: null 
   model_name: "deepseek-reasoner"
 
 vlm:
   base_url: "https://api.stepfun.com/v1"
-  api_key: null #YOUR_STEPFUN_API_KEY
+  #YOUR_STEPFUN_API_KEY
+  api_key: null 
   model_name: "step-1o-turbo-vision"
 
 
