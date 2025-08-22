@@ -88,6 +88,14 @@ def validate_required_services():
             all_valid = False
     else:
         console.print("ℹ️  [yellow]未检测到Tushare密钥，跳过Tushare验证[/yellow]")
+
+        # 验证akshare是否安装
+        try:
+            import akshare
+            console.print("✅ [green]akshare已安装[/green]")
+        except ImportError:
+            console.print("❌ [red]akshare未安装，请重新执行pip install akshare[/red]")
+            all_valid = False
     
     # 始终验证LLM
     if not validate_llm_connection():
