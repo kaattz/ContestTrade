@@ -124,14 +124,21 @@ After all agents have finished running, you can view the signals they provide in
   <img src="assets/contest_trade_cli_main.jpg" style="width: 100%; height: auto;">
 </p>
 
-You can also choose to view a more detailed report.
+You can choose to view a more detailed research report.
 <p align="center">
   <img src="assets/contest_trade_cli_report.jpg" style="width: 100%; height: auto;">
 </p>
 
 <p align="center">
-  <img src="assets/contest_trade_cli_report_detail.jpg" style="width: 100%; height: auto;">
+  <img src="assets/contest_trade_cli_research_report.jpg" style="width: 100%; height: auto;">
 </p>
+
+You can also choose to view a more detailed data analysis report.
+<p align="center">
+  <img src="assets/contest_trade_cli_data_report.jpg" style="width: 100%; height: auto;">
+</p>
+
+> All the above reports will be saved in the `contest_trade/agents_workspace/results` directory in Markdown format for your future reference and sharing.
 
 ## Disclaimer
 
