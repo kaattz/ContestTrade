@@ -127,14 +127,21 @@ python -m cli.main run
   <img src="assets/contest_trade_cli_main.jpg" style="width: 100%; height: auto;">
 </p>
 
-同时可以进一步选择查看详细的报告。
+同时可以进一步选择查看详细的研究报告。
 <p align="center">
   <img src="assets/contest_trade_cli_report.jpg" style="width: 100%; height: auto;">
 </p>
 
 <p align="center">
-  <img src="assets/contest_trade_cli_report_detail.jpg" style="width: 100%; height: auto;">
+  <img src="assets/contest_trade_cli_research_report.jpg" style="width: 100%; height: auto;">
 </p>
+
+或者您也可以选择查看详细的数据分析报告。
+<p align="center">
+  <img src="assets/contest_trade_cli_data_report.jpg" style="width: 100%; height: auto;">
+</p>
+
+> 以上报告都会以Markdown格式保存在 `contest_trade/agents_workspace/results` 目录下，方便您后续查看和分享。
 
 ## 🌟 我们的愿景与路线图 (Vision & Roadmap)
 
