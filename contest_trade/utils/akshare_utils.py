@@ -6,7 +6,7 @@ import json
 import hashlib
 import pickle
 from pathlib import Path
-from pathlib import Path
+from datetime import datetime
 from config.config import cfg
 
 import akshare as ak
@@ -29,6 +29,8 @@ class CachedAksharePro:
     def run_with_cache(self, func_name: str, func_kwargs: str, verbose: bool = False):
         func_kwargs = json.loads(func_kwargs)
         args_hash = hashlib.md5(str(func_kwargs).encode()).hexdigest()
+        trigger_time = datetime.now().strftime("%Y%m%d%H")
+        args_hash = f"{args_hash}_{trigger_time}"
         func_cache_dir = self.cache_dir / func_name
         if not func_cache_dir.exists():
             func_cache_dir.mkdir(parents=True, exist_ok=True)
