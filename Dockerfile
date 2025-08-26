@@ -1,5 +1,5 @@
 # Phase 1
-FROM frolvlad/alpine-miniconda3:latest AS compile-image
+FROM continuumio/miniconda3:latest AS compile-image
 WORKDIR /ContestTrade
 COPY requirements.txt .
 # RUN conda update conda
@@ -20,8 +20,7 @@ RUN conda-pack -n contesttrade --ignore-missing-files -o /tmp/env.tar && \
 RUN /venv/bin/conda-unpack
 
 # Phase 2
-FROM frolvlad/alpine-miniconda3:latest AS runtime-image
-RUN apk update && apk add bash
+FROM continuumio/miniconda3:latest AS runtime-image
 
 WORKDIR /ContestTrade
 COPY . .
