@@ -219,7 +219,7 @@ class ContestEvaluator:
                         type=type_match.group(1).strip()
                     ))
             
-            return mentions[:3]  # 最多返回3个
+            return mentions  # 返回所有解析到的mentions
             
         except Exception as e:
             logger.error(f"提取mentions失败: {e}")

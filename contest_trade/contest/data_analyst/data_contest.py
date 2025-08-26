@@ -160,7 +160,7 @@ class DataContest:
         # 按预测得分排序，选择top-k
         sorted_agents = sorted(scores.items(), key=lambda x: x[1], reverse=True)
         top_k = 3  # 选择前3个agent
-        selected_agents = [agent_name for agent_name, score in sorted_agents[:top_k] if score > 0]
+        selected_agents = [agent_name for agent_name, score in sorted_agents[:top_k]]
         
         logger.info(f"从 {len(scores)} 个agent中选择了 top-{len(selected_agents)}")
         for i, agent_name in enumerate(selected_agents):
