@@ -1,20 +1,17 @@
 """
-Simplified Trade Company - 合并所有冗余代码，包装成LangGraph工作流
+Simplified Trade Company - 合并所有代码，包装成LangGraph工作流
 """
 import re
 import json
 import asyncio
+from datetime import datetime
 from typing import List, Dict, TypedDict
 from langgraph.graph import END, StateGraph
 from langchain_core.runnables import RunnableConfig
 from langchain_core.callbacks import dispatch_custom_event
-
 from config.config import cfg, PROJECT_ROOT
 from agents.data_analysis_agent import DataAnalysisAgent, DataAnalysisAgentConfig, DataAnalysisAgentInput
 from agents.research_agent import ResearchAgent, ResearchAgentConfig, ResearchAgentInput
-from contest.judger_data_converter import DataFormatConverter
-from contest.judger_executor import run_judger_critic_pipeline
-from contest.judger_executor import get_signal_details, format_signal_output
 from utils.market_manager import GLOBAL_MARKET_MANAGER
 
 # 统一的状态定义
@@ -22,8 +19,6 @@ class CompanyState(TypedDict):
     trigger_time: str
     data_factors: List[Dict]
     research_signals: List[Dict]
-    judger_scores: Dict
-    optimized_weights: Dict
     all_events: List[Dict]
     step_results: Dict
 
@@ -45,21 +40,18 @@ class SimpleTradeCompany:
         
         # 初始化Research Agents
         self.research_agents = {}
-        
+
         # 从belief_list.json读取belief配置
         belief_list_path = PROJECT_ROOT / cfg.research_agent_config["belief_list_path"]
         with open(belief_list_path, 'r', encoding='utf-8') as f:
             belief_list = json.load(f)
-        
+
         for agent_config_idx, belief in enumerate(belief_list):
             custom_config = ResearchAgentConfig(
                 agent_name=f"agent_{agent_config_idx}",
                 belief=belief,
             )
             self.research_agents[agent_config_idx] = ResearchAgent(custom_config)
-        
-        # 初始化数据转换器
-        self.data_converter = DataFormatConverter(self.workspace_dir)
 
     # LangGraph节点函数
     async def run_data_agents_step(self, state: CompanyState, config: RunnableConfig) -> CompanyState:
@@ -139,97 +131,6 @@ class SimpleTradeCompany:
             "step_results": step_results
         }
 
-    async def run_judger_critic_step(self, state: CompanyState, config: RunnableConfig) -> CompanyState:
-        """运行JudgerCritic步骤 - 调用子脚本函数"""
-        trigger_time = state["trigger_time"]
-        if not cfg.researcher_contest_config["contest_mode"]:
-            return {
-                "judger_scores": {},
-                "optimized_weights": {},
-                "step_results": state["step_results"]
-            }
-        
-        # 调用子脚本中的JudgerCritic执行器
-        judger_result = await run_judger_critic_pipeline(
-            trigger_time=trigger_time,
-            workspace_dir=self.workspace_dir,
-            research_agents=self.research_agents
-        )
-        
-        # 更新状态
-        step_results = state["step_results"].copy()
-        
-        if judger_result['status'] == 'success':
-            judger_scores = judger_result.get('consensus_scores', {})
-            optimized_weights = judger_result.get('optimized_weights', {})
-            
-            step_results["judger_critic"] = {
-                "status": "success",
-                "scores_count": len(judger_scores),
-                "weights_count": len(optimized_weights),
-                "avg_score": sum(judger_scores.values()) / len(judger_scores) if judger_scores else 0,
-                "consensus_scores": judger_scores,
-                "optimized_weights": optimized_weights
-            }
-            
-            print(f"✅ JudgerCritic步骤完成，评分信号数量: {len(judger_scores)}")
-            
-            return {
-                "judger_scores": judger_scores,
-                "optimized_weights": optimized_weights,
-                "step_results": step_results
-            }
-        else:
-            step_results["judger_critic"] = {
-                "status": "failed",
-                "reason": judger_result.get('reason', 'unknown')
-            }
-            
-            print(f"❌ JudgerCritic步骤失败: {judger_result.get('reason', 'unknown')}")
-            
-            return {
-                "judger_scores": {},
-                "optimized_weights": {},
-                "step_results": step_results
-            }
-
-    async def run_contest_step(self, state: CompanyState, config: RunnableConfig) -> CompanyState:
-        """运行竞赛步骤"""
-        research_signals = state["research_signals"]
-        judger_scores = state["judger_scores"]
-        optimized_weights = state["optimized_weights"]
-        
-        print("🚀 开始运行竞赛步骤...")
-        
-        # 基于权重选择最佳信号
-        if optimized_weights:
-            # 根据权重排序选择前3个信号
-            sorted_weights = sorted(optimized_weights.items(), key=lambda x: x[1], reverse=True)
-            best_signal_names = [name for name, weight in sorted_weights[:3]]
-            
-            # 从research_signals中找对应的信号
-            best_signals = []
-            for signal in research_signals:
-                if signal.get('agent_name') in best_signal_names or signal.get('agent_id') in [int(name.split('_')[-1]) if '_' in name else -1 for name in best_signal_names]:
-                    best_signals.append(signal)
-        else:
-            # 简单的竞赛逻辑：取前所有作为最佳信号
-            best_signals = research_signals if research_signals else []
-        
-        print(f"✅ 竞赛步骤完成，最佳信号数量: {len(best_signals)}")
-        
-        # 更新状态
-        step_results = state["step_results"].copy()
-        step_results["contest"] = {
-            "best_signals_count": len(best_signals), 
-            "best_signals": best_signals,
-            "used_weights": bool(optimized_weights)
-        }
-        
-        return {
-            "step_results": step_results
-        }
-
     async def finalize_step(self, state: CompanyState, config: RunnableConfig) -> CompanyState:
         """最终结果步骤"""
         trigger_time = state["trigger_time"]
@@ -239,11 +140,10 @@ class SimpleTradeCompany:
         step_results = state["step_results"]
         
         print("🚀 开始最终结果步骤...")
-        
-        # 获取最佳信号
-        best_signals = step_results.get("contest", {}).get("best_signals", [])
-        
-        # 生成最终结果
+        # 优先使用research产生的信号作为最终最佳信号
+        best_signals = research_signals if research_signals else []
+
+        # 生成最终结果（保留但不额外输出）
         final_result = {
             "trigger_time": trigger_time,
             "data_factors_count": len(data_factors),
@@ -254,7 +154,7 @@ class SimpleTradeCompany:
         }
 
         print("✅ 最终结果步骤完成")
-        
+
         return {
             "step_results": step_results
         }
@@ -436,24 +336,20 @@ class SimpleTradeCompany:
     def create_company_workflow(self):
         """创建公司工作流"""
         workflow = StateGraph(CompanyState)
-        
+
         # 添加节点
         workflow.add_node("run_data_agents", self.run_data_agents_step)
         workflow.add_node("run_research_agents", self.run_research_agents_step)
-        workflow.add_node("run_judger_critic", self.run_judger_critic_step)
-        workflow.add_node("run_contest", self.run_contest_step)
         workflow.add_node("finalize", self.finalize_step)
-        
+
         # 设置入口点
         workflow.set_entry_point("run_data_agents")
-        
-        # 定义边
+
+        # 定义边（data -> research -> finalize）
         workflow.add_edge("run_data_agents", "run_research_agents")
-        workflow.add_edge("run_research_agents", "run_judger_critic")
-        workflow.add_edge("run_judger_critic", "run_contest")
-        workflow.add_edge("run_contest", "finalize")
+        workflow.add_edge("run_research_agents", "finalize")
         workflow.add_edge("finalize", END)
-        
+
         return workflow.compile()
 
     async def run_company(self, trigger_time: str, config: RunnableConfig = None):
@@ -468,8 +364,6 @@ class SimpleTradeCompany:
             trigger_time=trigger_time,
             data_factors=[],
             research_signals=[],
-            judger_scores={},
-            optimized_weights={},
             all_events=[],
             step_results={}
         )
@@ -506,8 +400,6 @@ class SimpleTradeCompany:
             trigger_time=trigger_time,
             data_factors=[],
             research_signals=[],
-            judger_scores={},
-            optimized_weights={},
             all_events=[],
             step_results={}
         )
@@ -518,7 +410,6 @@ class SimpleTradeCompany:
             yield event
 
 if __name__ == "__main__":
-    from datetime import datetime
     async def main():
         company = SimpleTradeCompany()
         
@@ -563,18 +454,14 @@ if __name__ == "__main__":
         print(f"✅ 公司工作流完成:")
         if final_state:
             step_results = final_state.get('step_results', {})
-            
-            # 从step_results中获取统计信息
             data_team_results = step_results.get("data_team", {})
             research_team_results = step_results.get("research_team", {})
             
             data_factors_count = data_team_results.get("factors_count", len(final_state.get('data_factors', [])))
             research_signals_count = research_team_results.get("signals_count", len(final_state.get('research_signals', [])))
-            total_events_count = len(final_state.get('all_events', []))
             
             print(f"   数据因子: {data_factors_count}")
             print(f"   研究信号: {research_signals_count}")
-            print(f"   总事件: {total_events_count}")
         else:
             print(f"   无最终状态数据")
         print(f"   公司事件总数: {len(company_events)}")

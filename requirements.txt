@@ -16,3 +16,4 @@ rich
 tabulate
 akshare
 crawl4ai
+lightgbm
