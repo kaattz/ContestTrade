@@ -9,6 +9,7 @@ finnhub-python
 typer
 pydantic
 questionary
+prompt_toolkit<3.0.30
 PyYAML
 pandas
 langgraph
