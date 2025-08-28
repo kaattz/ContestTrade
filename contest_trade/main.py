@@ -155,6 +155,10 @@ class SimpleTradeCompany:
 
         print("✅ 最终结果步骤完成")
 
+        step_results = state["step_results"]
+        step_results["contest"] = {
+            "best_signals": best_signals
+        }
         return {
             "step_results": step_results
         }
@@ -466,4 +470,4 @@ if __name__ == "__main__":
             print(f"   无最终状态数据")
         print(f"   公司事件总数: {len(company_events)}")
         
-    asyncio.run(main()) 
+    asyncio.run(main())
