@@ -3,24 +3,14 @@ US Price Market data source
 美股价格市场数据源（替代原price_market.py）
 整合美股K线数据、板块轮动、资金流向等，生成综合宏观市场分析
 返回DataFrame列: ['title', 'content', 'pub_time', 'url']
-"""
-import sys
-from pathlib import Path
-
-_CURRENT_FILE = Path(__file__).resolve()
-_CONTEST_TRADE_DIR = _CURRENT_FILE.parents[1]
-if str(_CONTEST_TRADE_DIR) not in sys.path:
-    sys.path.insert(0, str(_CONTEST_TRADE_DIR))
-    
+""" 
 import pandas as pd
 import asyncio
-import traceback
 from datetime import datetime, timedelta
 from data_source.data_source_base import DataSourceBase
 from utils.fmp_utils import get_us_stock_price
 from models.llm_model import GLOBAL_LLM
 from loguru import logger
-from config.config import cfg
 from utils.date_utils import get_previous_trading_date
 
 

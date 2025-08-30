@@ -3,19 +3,10 @@ US Polygon News data source
 获取美股财经新闻（替代sina_news）
 返回DataFrame列: ['title', 'content', 'pub_time', 'url']
 """
-import sys
-from pathlib import Path
-
-_CURRENT_FILE = Path(__file__).resolve()
-_CONTEST_TRADE_DIR = _CURRENT_FILE.parents[1]
-if str(_CONTEST_TRADE_DIR) not in sys.path:
-    sys.path.insert(0, str(_CONTEST_TRADE_DIR))
-
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 import asyncio
 from data_source.data_source_base import DataSourceBase
-from utils.date_utils import get_previous_trading_date
 from utils.polygon_utils import get_us_stock_news
 from loguru import logger
 

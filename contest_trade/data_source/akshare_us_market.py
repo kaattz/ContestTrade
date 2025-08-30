@@ -4,18 +4,9 @@ Akshare US Market data source
 返回DataFrame列: ['title', 'content', 'pub_time', 'url']
 """
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 import traceback
 from loguru import logger
-
-import sys
-from pathlib import Path
-
-_CURRENT_FILE = Path(__file__).resolve()
-_CONTEST_TRADE_DIR = _CURRENT_FILE.parents[1]
-if str(_CONTEST_TRADE_DIR) not in sys.path:
-    sys.path.insert(0, str(_CONTEST_TRADE_DIR))
-
 from data_source.data_source_base import DataSourceBase
 from utils.date_utils import get_previous_trading_date
 
