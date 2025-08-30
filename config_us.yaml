@@ -33,12 +33,15 @@ vlm:
 
 # US Market specific data agents configuration
 data_agents_config:
-  - agent_name: "us_price_market_agent"
+  - agent_name: "akshare_us_market"
     data_source_list: 
-      - "data_source.price_market_alpha_vantage.PriceMarketAlphaVantage"
-  - agent_name: "us_news_agent"
+      - "data_source.akshare_us_market.AkshareUSMarket"
+  - agent_name: "us_polygen_news"
     data_source_list: 
-      - "data_source.us_news_crawl.USNewsCrawl"
+      - "data_source.us_polygen_news.USPolygonNews"
+  - agent_name: "us_price_market"
+    data_source_list: 
+      - "data_source.us_price_market.USPriceMarket"
 
 # US Market specific research agent configuration  
 research_agent_config:
