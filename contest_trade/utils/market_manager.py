@@ -26,6 +26,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from utils.tushare_utils import pro_cached
 from utils.fmp_utils import get_us_stock_price, fmp_cached
+from config.config import cfg
 
 class Market(Enum):
     """市场枚举"""
@@ -91,8 +92,11 @@ class MarketManagerConfig:
     trading_configs: Dict[str, TradingCostConfig]
 
     @classmethod
-    def from_config_file(cls, config_path: str = "config/market_config.yaml") -> "MarketManagerConfig":
+    def from_config_file(cls, config_path: str = None) -> "MarketManagerConfig":
         """从配置文件加载市场管理器配置"""
+        if config_path is None:
+            config_path = cfg.market_config_file
+        
         config_file = Path(config_path)
         if not config_file.exists():
             config_file = PROJECT_ROOT / config_path
@@ -244,8 +248,15 @@ class MarketManager:
             stock_name = df.iloc[0]['name']
             return stock_name
         elif market == "US-Stock":
-            # 美股：symbol已经是标准格式如AAPL
+            # 优先使用缓存查询美股名称
             try:
+                us_cache = self._get_us_stock_basic_cache()
+                if us_cache is not None and not us_cache.empty:
+                    match = us_cache[us_cache['ts_code'] == symbol]
+                    if not match.empty:
+                        return match.iloc[0]['name']
+                
+                # Fallback to FMP API if cache miss
                 profile_data = fmp_cached.run(f'profile/{symbol}', {})
                 if profile_data and len(profile_data) > 0:
                     company_name = profile_data[0].get('companyName', symbol)
@@ -418,7 +429,19 @@ class MarketManager:
             )
             df = df[df["list_date"] < target_date]
         elif market == Market.US:
-            # get market from tushare
+            # 优先使用缓存，fallback到tushare
+            df = self._get_us_stock_basic_cache()
+            if df is not None:
+                # 缓存数据已经可用，直接过滤
+                df = df[df["list_date"] < target_date]
+                df = df[~(df["delist_date"] < target_date)]
+                df = df.dropna(subset=["ts_code", "list_date"])
+                # 确保name列存在，如果没有则使用ts_code
+                if 'name' not in df.columns:
+                    df['name'] = df['ts_code']
+                return df
+            
+            # Fallback to tushare if cache not available
             df_all = []
             for i in range(5):
                 df = pro_cached.run(
@@ -854,8 +877,24 @@ class MarketManager:
             print(f"读取股票基本信息缓存失败: {e}")
             return None
 
+    def _get_us_stock_basic_cache(self):
+        """获取美股基本信息缓存，优先使用离线缓存"""
+        cache_path = Path(__file__).parent / 'cache' / 'market_manager' / 'us_stock_basic_cache.json'
+        
+        try:
+            if cache_path.exists():
+                print(f"使用美股基本信息缓存: {cache_path}")
+                with open(cache_path, 'r', encoding='utf-8') as f:
+                    cache_data = json.load(f)
+                return pd.DataFrame(cache_data)
+            else:
+                print(f"美股基本信息缓存不存在: {cache_path}")
+                return None
+        except Exception as e:
+            print(f"读取美股基本信息缓存失败: {e}")
+            return None
+
     def _get_csi_components_cache(self, index_code: str):
-        """获取指数成分股缓存，优先使用离线缓存"""
         cache_file_map = {
             "000300.SH": "csi300_components_cache.json",
             "000905.SH": "csi500_components_cache.json", 
@@ -905,5 +944,8 @@ GLOBAL_MARKET_MANAGER = MarketManager(GLOBAL_MARKET_CONFIG)
 if __name__ == "__main__":
     print(GLOBAL_MARKET_MANAGER.get_target_symbol_context("2025-01-01 09:00:00"))
     print(GLOBAL_MARKET_MANAGER.get_total_namechange("CN-Stock"))
+    print(GLOBAL_MARKET_MANAGER.get_target_symbol_context("2025-01-01 09:00:00"))
+
+    print(GLOBAL_MARKET_MANAGER.get_market_symbols("US-Stock", "2025-01-09 15:00:00"))
     pass
 
