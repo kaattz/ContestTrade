@@ -26,6 +26,11 @@ from .utils import get_trigger_time_for_market, get_market_selection
 
 console = Console()
 
+def get_text(cn_text: str, en_text: str) -> str:
+    """根据市场类型返回对应语言的文本"""
+    market_type = os.environ.get('CONTEST_TRADE_MARKET', 'CN-Stock')
+    return en_text if market_type == 'US-Stock' else cn_text
+
 app = typer.Typer(
     name="contesttrade",
     help="ContestTrade: 基于内部竞赛机制的Multi-Agent交易系统 (支持A股和美股)",
@@ -62,9 +67,10 @@ class ContestTradeDisplay:
     """ContestTrade显示管理器"""
     
     def __init__(self):
+        self.market_type = os.environ.get('CONTEST_TRADE_MARKET', 'CN-Stock')
         self.messages = deque(maxlen=200)  # 增加消息队列容量
         self.agent_status = _get_agent_config()
-        self.current_task = "初始化系统..."
+        self.current_task = get_text("初始化系统...", "Initializing system...")
         self.progress_info = ""
         self.final_state = None
         self.analysis_completed = False
@@ -105,7 +111,7 @@ class ContestTradeDisplay:
                         files = list(agent_dir.glob(pattern))
                         if files and self.agent_status[agent_name] != "completed":
                             self.update_agent_status(agent_name, "completed")
-                            self.add_message("Data Analysis Agent", f"✅ {agent_name} 完成数据分析")
+                            self.add_message(get_text("Data Analysis Agent", "Data Analysis Agent"), get_text(f"✅ {agent_name} 完成数据分析", f"✅ {agent_name} completed data analysis"))
         
         # 检查reports目录（Research Agent结果）
         reports_dir = Path(PROJECT_ROOT) / "agents_workspace" / "reports"
@@ -119,21 +125,21 @@ class ContestTradeDisplay:
                         files = list(agent_dir.glob(pattern))
                         if files and self.agent_status[agent_name] != "completed":
                             self.update_agent_status(agent_name, "completed")
-                            self.add_message("Research Agent", f"✅ {agent_name} 完成研究分析")
+                            self.add_message(get_text("Research Agent", "Research Agent"), get_text(f"✅ {agent_name} 完成研究分析", f"✅ {agent_name} completed research analysis"))
     
     def start_data_agents(self):
         """开始所有Data Analysis Agent"""
         for agent_name in self.agent_status:
             if not agent_name.startswith("agent_"):  # Data agents
                 self.update_agent_status(agent_name, "running")
-        self.add_message("系统", "🚀 开始运行所有Data Analysis Agent")
+        self.add_message(get_text("系统", "System"), get_text("🚀 开始运行所有Data Analysis Agent", "🚀 Starting all Data Analysis Agents"))
     
     def start_research_agents(self):
         """开始所有Research Agent"""
         for agent_name in self.agent_status:
             if agent_name.startswith("agent_"):  # Research agents
                 self.update_agent_status(agent_name, "running")
-        self.add_message("系统", "🚀 开始运行所有Research Agent")
+        self.add_message(get_text("系统", "System"), get_text("🚀 开始运行所有Research Agent", "🚀 Starting all Research Agents"))
         
     def add_message(self, message_type: str, content: str):
         """添加消息"""
@@ -219,11 +225,11 @@ class ContestTradeDisplay:
             with open(welcome_text, "r", encoding="utf-8") as f:
                 welcome = f.read()
         else:
-            welcome = "ContestTrade: 基于内部竞赛机制的Multi-Agent交易系统"
+            welcome = get_text("ContestTrade: 基于内部竞赛机制的Multi-Agent交易系统", "ContestTrade: Multi-Agent Trading System Based on Internal Contest Mechanism")
         
         header_panel = Panel(
             Align.center(welcome),
-            title="🎯 ContestTrade - 基于内部竞赛机制的Multi-Agent交易系统",
+            title=get_text("🎯 ContestTrade - 基于内部竞赛机制的Multi-Agent交易系统", "🎯 ContestTrade - Multi-Agent Trading System Based on Internal Contest Mechanism"),
             border_style="blue",
             padding=(0, 1),
             expand=True  # 自适应宽度
@@ -236,12 +242,12 @@ class ContestTradeDisplay:
         # Data Analysis Agent状态
         data_agents = {k: v for k, v in self.agent_status.items() if not k.startswith("agent_")}
         if data_agents:
-            status_text.append("📊 Data Analysis Agent\n", style="bold cyan")
+            status_text.append(get_text("📊 Data Analysis Agent\n", "📊 Data Analysis Agent\n"), style="bold cyan")
             for agent_name, status in data_agents.items():
                 status_icon = {
-                    "pending": "⏳等待中...",
-                    "running": "🔄分析中...", 
-                    "completed": "✅分析完成"
+                    "pending": get_text("⏳等待中...", "⏳ Pending..."),
+                    "running": get_text("🔄分析中...", "🔄 Analyzing..."), 
+                    "completed": get_text("✅分析完成", "✅ Analysis Complete")
                 }.get(status, "❓")
                 
                 agent_display = agent_name[:20].ljust(20)
@@ -250,12 +256,12 @@ class ContestTradeDisplay:
         # Research Agent状态
         research_agents = {k: v for k, v in self.agent_status.items() if k.startswith("agent_")}
         if research_agents:
-            status_text.append("\n🔍 Research Agent\n", style="bold green")
+            status_text.append(get_text("\n🔍 Research Agent\n", "\n🔍 Research Agent\n"), style="bold green")
             for agent_name, status in research_agents.items():
                 status_icon = {
-                    "pending": "⏳等待中...",
-                    "running": "🔄分析中...", 
-                    "completed": "✅分析完成"
+                    "pending": get_text("⏳等待中...", "⏳ Pending..."),
+                    "running": get_text("🔄分析中...", "🔄 Analyzing..."), 
+                    "completed": get_text("✅分析完成", "✅ Analysis Complete")
                 }.get(status, "❓")
                 
                 agent_display = agent_name[:20].ljust(20)
@@ -263,7 +269,7 @@ class ContestTradeDisplay:
         
         status_panel = Panel(
             status_text,
-            title="🤖 Agent状态",
+            title=get_text("🤖 Agent状态", "🤖 Agent Status"),
             border_style="yellow",
             padding=(0, 1),
             expand=True  # 自适应宽度
@@ -272,21 +278,21 @@ class ContestTradeDisplay:
         
         # 更新进度面板
         progress_text = Text()
-        progress_text.append(f"📅 触发时间: {trigger_time}\n", style="cyan")
-        progress_text.append(f"🎯 当前任务: {self.current_task}\n", style="yellow")
+        progress_text.append(get_text(f"📅 触发时间: {trigger_time}\n", f"📅 Trigger Time: {trigger_time}\n"), style="cyan")
+        progress_text.append(get_text(f"🎯 当前任务: {self.current_task}\n", f"🎯 Current Task: {self.current_task}\n"), style="yellow")
         if self.progress_info:
-            progress_text.append(f"📈 进度: {self.progress_info}\n", style="green")
+            progress_text.append(get_text(f"📈 进度: {self.progress_info}\n", f"📈 Progress: {self.progress_info}\n"), style="green")
         
         # 显示步骤计数
-        progress_text.append(f"\n📊 步骤统计:\n", style="bold blue")
-        progress_text.append(f"  Data Analysis Agent事件: {self.step_counts['data']}\n")
-        progress_text.append(f"  Research Agent事件: {self.step_counts['research']}\n")
+        progress_text.append(get_text(f"\n📊 步骤统计:\n", f"\n📊 Step Statistics:\n"), style="bold blue")
+        progress_text.append(get_text(f"  Data Analysis Agent事件: {self.step_counts['data']}\n", f"  Data Analysis Agent Events: {self.step_counts['data']}\n"))
+        progress_text.append(get_text(f"  Research Agent事件: {self.step_counts['research']}\n", f"  Research Agent Events: {self.step_counts['research']}\n"))
         # progress_text.append(f"  竞赛事件: {self.step_counts['contest']}\n")
         # progress_text.append(f"  完成事件: {self.step_counts['finalize']}\n")
         
         progress_panel = Panel(
             progress_text,
-            title="📊 进度信息",
+            title=get_text("📊 进度信息", "📊 Progress Information"),
             border_style="blue",
             padding=(0, 1),
             expand=True  # 自适应宽度
@@ -295,17 +301,17 @@ class ContestTradeDisplay:
         
         # 更新主内容区域
         content_text = Text()
-        content_text.append("🔄 实时事件日志\n", style="bold blue")
+        content_text.append(get_text("🔄 实时事件日志\n", "🔄 Real-time Event Log\n"), style="bold blue")
         
         if self.messages:
             for msg in list(self.messages)[-8:]:
                 content_text.append(f"{msg}\n")
         else:
-            content_text.append("  ⏳ 等待事件...\n")
+            content_text.append(get_text("  ⏳ 等待事件...\n", "  ⏳ Waiting for events...\n"))
         
         content_panel = Panel(
             content_text,
-            title="📄 事件流",
+            title=get_text("📄 事件流", "📄 Event Stream"),
             border_style="blue",
             padding=(1, 2),
             expand=True  # 自适应宽度
@@ -315,13 +321,13 @@ class ContestTradeDisplay:
         # 更新底部
         if self.analysis_completed and self.final_state:
             footer_text = self._create_result_summary()
-            footer_title = "🏆 结果摘要"
+            footer_title = get_text("🏆 结果摘要", "🏆 Result Summary")
         else:
             footer_text = Text()
-            footer_text.append("🔄 分析进行中...预计等待10分钟...", style="bold yellow")
+            footer_text.append(get_text("🔄 分析进行中...预计等待10分钟...", "🔄 Analysis in progress... Expected wait time: 10 minutes..."), style="bold yellow")
             if self.analysis_completed:
-                footer_text.append("\n✅ 分析完成！请按回车键(↵)退出运行界面...", style="bold green")
-            footer_title = "📊 状态信息"
+                footer_text.append(get_text("\n✅ 分析完成！请按回车键(↵)退出运行界面...", "\n✅ Analysis completed! Press Enter (↵) to exit the interface..."), style="bold green")
+            footer_title = get_text("📊 状态信息", "📊 Status Information")
         
         footer_panel = Panel(
             footer_text,
@@ -345,8 +351,8 @@ class ContestTradeDisplay:
             data_factors_count = data_team_results.get('factors_count', 0)
             research_signals_count = research_team_results.get('signals_count', 0)
             
-            summary_text.append(f"📊 数据源: {data_factors_count} | ", style="green")
-            summary_text.append(f"🔍 研究信号: {research_signals_count} | ", style="blue")
+            summary_text.append(get_text(f"📊 数据源: {data_factors_count} | ", f"📊 Data Sources: {data_factors_count} | "), style="green")
+            summary_text.append(get_text(f"🔍 研究信号: {research_signals_count} | ", f"🔍 Research Signals: {research_signals_count} | "), style="blue")
             
             # 获取所有信号并筛选有机会的信号
             best_signals = step_results.get('contest', {}).get('best_signals', [])
@@ -359,23 +365,23 @@ class ContestTradeDisplay:
                     valid_signals.append(signal)
             
             if valid_signals:
-                summary_text.append(f"🎯 有效信号: {len(valid_signals)}", style="bold red")
+                summary_text.append(get_text(f"🎯 有效信号: {len(valid_signals)}", f"🎯 Valid Signals: {len(valid_signals)}"), style="bold red")
                 
                 for i, signal in enumerate(valid_signals):
                     symbol_name = signal.get('symbol_name', 'N/A')
                     action = signal.get('action', 'N/A')
                     agent_id = signal.get('agent_id', 'N/A')
                     
-                    summary_text.append(f"\n  {i+1}. Research Agent{agent_id}：", style="yellow")
+                    summary_text.append(get_text(f"\n  {i+1}. Research Agent{agent_id}：", f"\n  {i+1}. Research Agent{agent_id}: "), style="yellow")
                     summary_text.append(f"{symbol_name}({action}) ", style="cyan")
                     
             else:
-                summary_text.append("🎯 有效信号: 0", style="bold red")     
-                summary_text.append(" 无有效信号")
+                summary_text.append(get_text("🎯 有效信号: 0", "🎯 Valid Signals: 0"), style="bold red")     
+                summary_text.append(get_text(" 无有效信号", " No valid signals"))
 
-            summary_text.append("\n💡分析完成，按回车退出运行界面...")
+            summary_text.append(get_text("\n💡分析完成，按回车退出运行界面...", "\n💡Analysis completed, press Enter to exit the interface..."))
         else:
-            summary_text.append("❌ 分析失败", style="red")
+            summary_text.append(get_text("❌ 分析失败", "❌ Analysis Failed"), style="red")
         
         return summary_text
 
@@ -387,7 +393,7 @@ def run_contest_analysis_interactive(trigger_time: str, market: str):
         display = ContestTradeDisplay()
         
         # 在显示中添加市场信息
-        display.set_current_task(f"初始化ContestTrade系统... (市场: {market})")
+        display.set_current_task(get_text(f"初始化ContestTrade系统... (市场: {market})", f"Initializing ContestTrade system... (Market: {market})"))
         
         # 创建初始布局
         layout = display.create_layout(trigger_time)
@@ -398,7 +404,7 @@ def run_contest_analysis_interactive(trigger_time: str, market: str):
             display.update_display(layout, trigger_time)
             
             # 添加初始消息
-            display.add_message("系统", f"开始分析 - 市场: {market}, 时间: {trigger_time}")
+            display.add_message(get_text("系统", "System"), get_text(f"开始分析 - 市场: {market}, 时间: {trigger_time}", f"Starting analysis - Market: {market}, Time: {trigger_time}"))
             display.update_display(layout, trigger_time)
             
             # 检查模块导入 - Import when needed
@@ -407,12 +413,12 @@ def run_contest_analysis_interactive(trigger_time: str, market: str):
                 if SimpleTradeCompany is None:
                     raise ImportError("SimpleTradeCompany模块导入失败")
                     
-                display.add_message("系统", "✅ 成功导入SimpleTradeCompany模块")
+                display.add_message(get_text("系统", "System"), get_text("✅ 成功导入SimpleTradeCompany模块", "✅ Successfully imported SimpleTradeCompany module"))
                 display.update_display(layout, trigger_time)
                 
                 # 创建公司实例
                 company = SimpleTradeCompany()
-                display.add_message("系统", "✅ 成功创建SimpleTradeCompany实例")
+                display.add_message(get_text("系统", "System"), get_text("✅ 成功创建SimpleTradeCompany实例", "✅ Successfully created SimpleTradeCompany instance"))
                 display.update_display(layout, trigger_time)
                 
             except Exception as e:
@@ -425,8 +431,8 @@ def run_contest_analysis_interactive(trigger_time: str, market: str):
             
             # 运行结束后
             if final_state:
-                display.add_message("完成", "✅ 分析完成！")
-                display.set_current_task("分析完成，生成报告...")
+                display.add_message(get_text("完成", "Completed"), get_text("✅ 分析完成！", "✅ Analysis completed!"))
+                display.set_current_task(get_text("分析完成，生成报告...", "Analysis completed, generating report..."))
                 display.set_analysis_completed(True)
                 display.final_state = final_state
                 display.update_display(layout, trigger_time)
@@ -439,15 +445,15 @@ def run_contest_analysis_interactive(trigger_time: str, market: str):
                     
                     # 生成研究报告
                     markdown_content, report_path = generate_final_report(final_state, results_dir)
-                    display.add_message("报告", f"✅ 研究报告已生成: {report_path.name}")
+                    display.add_message(get_text("报告", "Report"), get_text(f"✅ 研究报告已生成: {report_path.name}", f"✅ Research report generated: {report_path.name}"))
                     
                     # 生成数据报告
                     factors_data = load_factors_data(trigger_time)
                     if factors_data and factors_data.get('agents'):
                         data_markdown_content, data_report_path = generate_data_report(factors_data, results_dir)
-                        display.add_message("报告", f"✅ 数据报告已生成: {data_report_path.name}")
+                        display.add_message(get_text("报告", "Report"), get_text(f"✅ 数据报告已生成: {data_report_path.name}", f"✅ Data report generated: {data_report_path.name}"))
                     else:
-                        display.add_message("报告", f"⚠️ 未找到数据源，跳过数据报告生成")
+                        display.add_message(get_text("报告", "Report"), get_text(f"⚠️ 未找到数据源，跳过数据报告生成", f"⚠️ No data sources found, skipping data report generation"))
                     
                     display.update_display(layout, trigger_time)
                 except Exception as e:
@@ -455,8 +461,8 @@ def run_contest_analysis_interactive(trigger_time: str, market: str):
                     display.update_display(layout, trigger_time)
                 
                 # 等待用户手动退出
-                console.print("\n[green]✅ 分析完成！[/green]")
-                console.print("[dim]按任意键退出运行界面...[/dim]")
+                console.print(get_text("\n[green]✅ 分析完成！[/green]", "\n[green]✅ Analysis completed![/green]"))
+                console.print(get_text("[dim]按任意键退出运行界面...[/dim]", "[dim]Press any key to exit the interface...[/dim]"))
                 input()
                 
             else:
@@ -482,8 +488,8 @@ def run_contest_analysis_interactive(trigger_time: str, market: str):
 async def run_with_events_capture(company, trigger_time: str, display: ContestTradeDisplay, layout, live):
     """运行公司工作流并捕获事件流"""
     try:
-        display.add_message("开始", "🚀 开始运行工作流...")
-        display.set_current_task("🔄 启动工作流...")
+        display.add_message(get_text("开始", "Start"), get_text("🚀 开始运行工作流...", "🚀 Starting workflow..."))
+        display.set_current_task(get_text("🔄 启动工作流...", "🔄 Starting workflow..."))
         display.create_log_file(trigger_time)
         display.update_display(layout, trigger_time)
         
@@ -546,23 +552,23 @@ async def run_with_events_capture(company, trigger_time: str, display: ContestTr
                 stage_config = {
                     "run_data_agents": {
                         "action": display.start_data_agents,
-                        "task": "🔄 Data Analysis Agent 数据收集阶段",
-                        "progress": "数据收集阶段 1/4"
+                        "task": get_text("🔄 Data Analysis Agent 数据收集阶段", "🔄 Data Analysis Agent Data Collection Phase"),
+                        "progress": get_text("数据收集阶段 1/4", "Data Collection Phase 1/4")
                     },
                     "run_research_agents": {
                         "action": display.start_research_agents,
-                        "task": "🔄 Research Agent 研究分析阶段", 
-                        "progress": "研究分析阶段 2/4"
+                        "task": get_text("🔄 Research Agent 研究分析阶段", "🔄 Research Agent Analysis Phase"), 
+                        "progress": get_text("研究分析阶段 2/4", "Research Analysis Phase 2/4")
                     },
                     "run_contest": {
                         "action": lambda: None,
-                        "task": "🔄 竞赛评选阶段",
-                        "progress": "竞赛评选阶段 3/4"
+                        "task": get_text("🔄 竞赛评选阶段", "🔄 Contest Evaluation Phase"),
+                        "progress": get_text("竞赛评选阶段 3/4", "Contest Evaluation Phase 3/4")
                     },
                     "finalize": {
                         "action": lambda: None,
-                        "task": "🔄 结果生成阶段",
-                        "progress": "结果生成阶段 4/4"
+                        "task": get_text("🔄 结果生成阶段", "🔄 Result Generation Phase"),
+                        "progress": get_text("结果生成阶段 4/4", "Result Generation Phase 4/4")
                     }
                 }
                 
@@ -576,19 +582,19 @@ async def run_with_events_capture(company, trigger_time: str, display: ContestTr
             elif event_type == "on_chain_end":
                 completion_config = {
                     "run_data_agents": {
-                        "task": "✅ Data Analysis Agent 完成",
-                        "message": "✅ 所有Data Analysis Agent完成"
+                        "task": get_text("✅ Data Analysis Agent 完成", "✅ Data Analysis Agent Completed"),
+                        "message": get_text("✅ 所有Data Analysis Agent完成", "✅ All Data Analysis Agents Completed")
                     },
                     "run_research_agents": {
-                        "task": "✅ Research Agent 完成", 
-                        "message": "✅ 所有Research Agent完成"
+                        "task": get_text("✅ Research Agent 完成", "✅ Research Agent Completed"), 
+                        "message": get_text("✅ 所有Research Agent完成", "✅ All Research Agents Completed")
                     },
                     "run_contest": {
-                        "task": "✅ 竞赛评选完成",
+                        "task": get_text("✅ 竞赛评选完成", "✅ Contest Evaluation Completed"),
                         "message": None
                     },
                     "finalize": {
-                        "task": "✅ 结果生成完成",
+                        "task": get_text("✅ 结果生成完成", "✅ Result Generation Completed"),
                         "message": None,
                         "special": True
                     }
@@ -598,7 +604,7 @@ async def run_with_events_capture(company, trigger_time: str, display: ContestTr
                     config = completion_config[event_name]
                     display.set_current_task(config["task"])
                     if config.get("message"):
-                        display.add_message("系统", config["message"])
+                        display.add_message(get_text("系统", "System"), config["message"])
                     
                     if config.get("special"):  # finalize阶段的特殊处理
                         final_state = event_data.get("output", {})
@@ -657,26 +663,26 @@ async def run_with_events_capture(company, trigger_time: str, display: ContestTr
 
 def ask_user_for_next_action(final_state):
     """询问用户下一步操作"""
-    console.print("\n[green]✅ 分析完成！[/green]")
-    console.print("[dim]输入 'rr' 查看研究报告 | 'dr' 查看数据报告 | 'n' 运行新分析 | 'q' 退出[/dim]")
+    console.print(get_text("\n[green]✅ 分析完成！[/green]", "\n[green]✅ Analysis completed![/green]"))
+    console.print(get_text("[dim]输入 'rr' 查看研究报告 | 'dr' 查看数据报告 | 'n' 运行新分析 | 'q' 退出[/dim]", "[dim]Enter 'rr' to view research report | 'dr' to view data report | 'n' for new analysis | 'q' to quit[/dim]"))
     
     while True:
         try:
-            user_input = input("请选择操作 (rr/dr/n/q): ").strip().lower()
+            user_input = input(get_text("请选择操作 (rr/dr/n/q): ", "Choose action (rr/dr/n/q): ")).strip().lower()
             if user_input == 'rr':
                 display_detailed_report(final_state)
-                console.print("[dim]输入 'rr' 查看研究报告 | 'dr' 查看数据报告 | 'n' 运行新分析 | 'q' 退出[/dim]")
+                console.print(get_text("[dim]输入 'rr' 查看研究报告 | 'dr' 查看数据报告 | 'n' 运行新分析 | 'q' 退出[/dim]", "[dim]Enter 'rr' to view research report | 'dr' to view data report | 'n' for new analysis | 'q' to quit[/dim]"))
             elif user_input == 'dr':
                 display_data_report(final_state)
-                console.print("[dim]输入 'rr' 查看研究报告 | 'dr' 查看数据报告 | 'n' 运行新分析 | 'q' 退出[/dim]")
+                console.print(get_text("[dim]输入 'rr' 查看研究报告 | 'dr' 查看数据报告 | 'n' 运行新分析 | 'q' 退出[/dim]", "[dim]Enter 'rr' to view research report | 'dr' to view data report | 'n' for new analysis | 'q' to quit[/dim]"))
             elif user_input == 'n':
                 return final_state, "new_analysis"
             elif user_input == 'q':
                 return final_state, "quit"
             else:
-                console.print("[yellow]无效输入，请输入 'rr', 'dr', 'n' 或 'q'[/yellow]")
+                console.print(get_text("[yellow]无效输入，请输入 'rr', 'dr', 'n' 或 'q'[/yellow]", "[yellow]Invalid input, please enter 'rr', 'dr', 'n' or 'q'[/yellow]"))
         except KeyboardInterrupt:
-            console.print("\n[yellow]用户中断，退出...[/yellow]")
+            console.print(get_text("\n[yellow]用户中断，退出...[/yellow]", "\n[yellow]User interrupted, exiting...[/yellow]"))
             return final_state, "quit"
 
 def display_data_report(final_state: Dict):
@@ -703,17 +709,17 @@ def display_data_report(final_state: Dict):
         # 生成报告内容
         total_agents = len(factors_data.get('agents', {}))
         
-        markdown_content = f"""# ContestTrade 数据分析报告
+        markdown_content = f"""# ContestTrade {get_text('数据分析报告', 'Data Analysis Report')}
 
-## 📊 数据摘要
+## 📊 {get_text('数据摘要', 'Data Summary')}
 
-**分析时间**: {trigger_time}  
-**分析状态**: ✅ 完成  
-**数据代理数量**: {total_agents}  
+**{get_text('分析时间', 'Analysis Time')}**: {trigger_time}  
+**{get_text('分析状态', 'Analysis Status')}**: ✅ {get_text('完成', 'Completed')}  
+**{get_text('数据代理数量', 'Data Agent Count')}**: {total_agents}  
 
 ---
 
-## 🔍 数据源分析详情
+## 🔍 {get_text('数据源分析详情', 'Data Source Analysis Details')}
 
 """
         
@@ -729,7 +735,7 @@ def display_data_report(final_state: Dict):
                 cleaned_context = re.sub(r'\[Batch \d+\]', '', context_string).strip()
                 markdown_content += f"{cleaned_context}\n\n"
             else:
-                markdown_content += "**暂无分析内容**\n\n"
+                markdown_content += f"**{get_text('暂无分析内容', 'No analysis content available')}**\n\n"
             
             markdown_content += "---\n\n"
         
@@ -743,15 +749,15 @@ def display_data_report(final_state: Dict):
         try:
             factors_data = load_factors_data(final_state.get('trigger_time', 'N/A'))
             if factors_data and factors_data.get('agents'):
-                console.print(f"\n[bold]数据分析摘要:[/bold]")
-                console.print(f"数据代理数量: {len(factors_data.get('agents', {}))}")
+                console.print(f"\n[bold]{get_text('数据分析摘要', 'Data Analysis Summary')}:[/bold]")
+                console.print(f"{get_text('数据代理数量', 'Data Agent Count')}: {len(factors_data.get('agents', {}))}")
                 
                 for agent_name in factors_data.get('agents', {}):
                     console.print(f"- {agent_name}")
             else:
-                console.print("[yellow]未找到数据分析结果[/yellow]")
+                console.print(f"[yellow]{get_text('未找到数据分析结果', 'No data analysis results found')}[/yellow]")
         except Exception as inner_e:
-            console.print(f"[red]简化版数据报告也显示失败: {inner_e}[/red]")
+            console.print(f"[red]{get_text('简化版数据报告也显示失败', 'Simplified data report display also failed')}: {inner_e}[/red]")
 
 
 def load_factors_data(trigger_time: str) -> Dict:
@@ -818,23 +824,23 @@ def display_detailed_report(final_state: Dict):
         
         signal_rate = f"{len(valid_signals)/len(best_signals)*100:.1f}% ({len(valid_signals)}/{len(best_signals)})" if len(best_signals) > 0 else "0% (0/0)"
         
-        markdown_content = f"""# ContestTrade 详细分析报告
+        markdown_content = f"""# ContestTrade {get_text('详细分析报告', 'Detailed Analysis Report')}
 
-## 📊 执行摘要
+## 📊 {get_text('执行摘要', 'Executive Summary')}
 
-**分析时间**: {trigger_time}  
-**数据源数量**: {data_factors_count}  
-**研究信号数量**: {research_signals_count}  
-**有效投资信号**: {len(valid_signals)}  
-**信号有效率**: {signal_rate}
+**{get_text('分析时间', 'Analysis Time')}**: {trigger_time}  
+**{get_text('数据源数量', 'Data Sources Count')}**: {data_factors_count}  
+**{get_text('研究信号数量', 'Research Signals Count')}**: {research_signals_count}  
+**{get_text('有效投资信号', 'Valid Investment Signals')}**: {len(valid_signals)}  
+**{get_text('信号有效率', 'Signal Effectiveness Rate')}**: {signal_rate}
 
 ---
 
-## 🎯 投资信号详情
+## 🎯 {get_text('投资信号详情', 'Investment Signals Details')}
 """
         
         if valid_signals:
-            markdown_content += f"\n### ✅ 推荐投资信号 ({len(valid_signals)}个)\n\n"
+            markdown_content += f"\n### ✅ {get_text('推荐投资信号', 'Recommended Investment Signals')} ({len(valid_signals)}{get_text('个', '')})\n\n"
             
             for i, signal in enumerate(valid_signals, 1):
                 symbol_name = signal.get('symbol_name', 'N/A')
@@ -844,56 +850,56 @@ def display_detailed_report(final_state: Dict):
                 agent_id = signal.get('agent_id', 'N/A')
                 
                 markdown_content += f"#### {i}. {symbol_name} ({symbol_code})\n\n"
-                markdown_content += f"- **投资动作**: {action}\n"
-                markdown_content += f"- **分析来源**: Research Agent {agent_id}\n\n"
+                markdown_content += f"- **{get_text('投资动作', 'Investment Action')}**: {action}\n"
+                markdown_content += f"- **{get_text('分析来源', 'Analysis Source')}**: Research Agent {agent_id}\n\n"
                 
                 evidence_list = signal.get('evidence_list', [])
                 if evidence_list:
-                    markdown_content += f"**📋 支撑证据 ({len(evidence_list)}项):**\n\n"
+                    markdown_content += f"**📋 {get_text('支撑证据', 'Supporting Evidence')} ({len(evidence_list)}{get_text('项', '')}):**\n\n"
                     for j, evidence in enumerate(evidence_list, 1):
                         desc = evidence.get('description', 'N/A')
                         source = evidence.get('from_source', 'N/A')
                         time = evidence.get('time', 'N/A')
                         markdown_content += f"{j}. **{desc}**\n"
-                        markdown_content += f"   - 时间: {time}\n"
-                        markdown_content += f"   - 来源: {source}\n\n"
+                        markdown_content += f"   - {get_text('时间', 'Time')}: {time}\n"
+                        markdown_content += f"   - {get_text('来源', 'Source')}: {source}\n\n"
                 
                 # 风险提示
                 limitations = signal.get('limitations', [])
                 if limitations:
-                    markdown_content += f"**⚠️ 潜在风险:**\n\n"
+                    markdown_content += f"**⚠️ {get_text('潜在风险', 'Potential Risks')}:**\n\n"
                     for limitation in limitations:
                         markdown_content += f"- {limitation}\n"
                     markdown_content += "\n"
                 
                 markdown_content += "---\n"
         else:
-            markdown_content += "\n### ❌ 暂无推荐投资信号\n\n"
-            markdown_content += "本次分析未发现具有明确投资机会的信号。\n\n"
+            markdown_content += f"\n### ❌ {get_text('暂无推荐投资信号', 'No Recommended Investment Signals')}\n\n"
+            markdown_content += get_text("本次分析未发现具有明确投资机会的信号。\n\n", "No signals with clear investment opportunities were found in this analysis.\n\n")
         
         # 无效信号统计
         if invalid_signals:
-            markdown_content += f"### ⚠️ 排除信号 ({len(invalid_signals)}个)\n"
-            markdown_content += "以下信号经分析后认为不具备投资机会：\n\n"
+            markdown_content += f"### ⚠️ {get_text('排除信号', 'Excluded Signals')} ({len(invalid_signals)}{get_text('个', '')})\n"
+            markdown_content += get_text("以下信号经分析后认为不具备投资机会：\n\n", "The following signals were analyzed and deemed not to have investment opportunities:\n\n")
             
             for i, signal in enumerate(invalid_signals, 1):
                 agent_id = signal.get('agent_id', 'N/A')
-                markdown_content += f"{i}. Research Agent {agent_id} - 无明确投资机会\n"
+                markdown_content += f"{i}. Research Agent {agent_id} - {get_text('无明确投资机会', 'No clear investment opportunity')}\n"
             
             markdown_content += "\n"
         generator.display_terminal_interactive_report(markdown_content)
         
     except Exception as e:
-        console.print(f"[red]交互式报告显示失败: {e}[/red]")
-        console.print("[yellow]正在显示简化版报告...[/yellow]")
+        console.print(get_text(f"[red]交互式报告显示失败: {e}[/red]", f"[red]Interactive report display failed: {e}[/red]"))
+        console.print(get_text("[yellow]正在显示简化版报告...[/yellow]", "[yellow]Displaying simplified report...[/yellow]"))
         
         # 显示简化版报告
         step_results = final_state.get('step_results', {})
         best_signals = step_results.get('contest', {}).get('best_signals', [])
         valid_signals = [s for s in best_signals if s.get('has_opportunity', 'no') == 'yes']
         
-        console.print(f"\n[bold]分析摘要:[/bold]")
-        console.print(f"总信号: {len(best_signals)}, 有效信号: {len(valid_signals)}")
+        console.print(f"\n[bold]{get_text('分析摘要', 'Analysis Summary')}:[/bold]")
+        console.print(get_text(f"总信号: {len(best_signals)}, 有效信号: {len(valid_signals)}", f"Total signals: {len(best_signals)}, Valid signals: {len(valid_signals)}"))
         
         for i, signal in enumerate(valid_signals, 1):
             console.print(f"{i}. {signal.get('symbol_name', 'N/A')} - {signal.get('action', 'N/A')}")
@@ -981,7 +987,7 @@ def run(
 
         break
     
-    console.print("[green]感谢使用ContestTrade![/green]")
+    console.print(get_text(f"[green]感谢使用ContestTrade![/green]", f"[green]Thank you for using ContestTrade![/green]"))
 
 @app.command()
 def config():
