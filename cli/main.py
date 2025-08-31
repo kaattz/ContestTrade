@@ -5,6 +5,7 @@ import asyncio
 import sys
 import json
 import re
+import os
 from pathlib import Path
 from typing import Optional, Dict
 from datetime import datetime
@@ -21,22 +22,23 @@ from rich import box
 
 from .utils import get_trigger_time, validate_required_services
 from .static.report_template import display_final_report_interactive
-from contest_trade.config.config import cfg, PROJECT_ROOT
-sys.path.append(str(PROJECT_ROOT))
-from contest_trade.main import SimpleTradeCompany
-from contest_trade.utils.tushare_utils import get_trade_date
-from contest_trade.models.llm_model import GLOBAL_LLM
+from .utils import get_trigger_time_for_market, get_market_selection
 
 console = Console()
 
 app = typer.Typer(
     name="contesttrade",
-    help="ContestTrade: 基于内部竞赛机制的Multi-Agent交易系统",
+    help="ContestTrade: 基于内部竞赛机制的Multi-Agent交易系统 (支持A股和美股)",
     add_completion=True,
 )
 
 def _get_agent_config():
     """从配置文件动态获取代理配置"""
+    # Import config after environment variable is set
+    from contest_trade.config.config import cfg, PROJECT_ROOT
+    import sys
+    sys.path.append(str(PROJECT_ROOT))
+    
     agent_status = {}
     
     # 从配置文件获取数据代理
@@ -70,7 +72,8 @@ class ContestTradeDisplay:
         self._last_update_hash = None  # 用于检测内容是否真正发生变化
         self._last_console_size = None  # 用于检测控制台大小变化
         
-        # 日志监控相关
+        # 日志监控相关 - Import PROJECT_ROOT when needed
+        from contest_trade.config.config import PROJECT_ROOT
         self.logs_dir = Path(PROJECT_ROOT) / "agents_workspace" / "logs"
         self.logs_dir.mkdir(parents=True, exist_ok=True)
         
@@ -84,6 +87,9 @@ class ContestTradeDisplay:
         
     def check_agent_status_from_events_and_files(self, trigger_time: str):
         """基于事件和文件系统更新agent状态"""
+        # Import PROJECT_ROOT when needed
+        from contest_trade.config.config import PROJECT_ROOT
+        
         # 格式化时间戳用于文件匹配
         timestamp_str = trigger_time.replace("-", "-").replace(":", "-").replace(" ", "_")
         
@@ -374,11 +380,14 @@ class ContestTradeDisplay:
         return summary_text
 
 
-def run_contest_analysis_interactive(trigger_time: str):
+def run_contest_analysis_interactive(trigger_time: str, market: str):
     """在交互界面中运行竞赛分析"""
     try:
         # 创建显示管理器
         display = ContestTradeDisplay()
+        
+        # 在显示中添加市场信息
+        display.set_current_task(f"初始化ContestTrade系统... (市场: {market})")
         
         # 创建初始布局
         layout = display.create_layout(trigger_time)
@@ -389,13 +398,12 @@ def run_contest_analysis_interactive(trigger_time: str):
             display.update_display(layout, trigger_time)
             
             # 添加初始消息
-            display.add_message("系统", f"开始分析时间: {trigger_time}")
-            display.set_current_task("初始化ContestTrade系统...")
-            display.set_progress_info("系统启动中...")
+            display.add_message("系统", f"开始分析 - 市场: {market}, 时间: {trigger_time}")
             display.update_display(layout, trigger_time)
             
-            # 检查模块导入
+            # 检查模块导入 - Import when needed
             try:
+                from contest_trade.main import SimpleTradeCompany
                 if SimpleTradeCompany is None:
                     raise ImportError("SimpleTradeCompany模块导入失败")
                     
@@ -425,6 +433,7 @@ def run_contest_analysis_interactive(trigger_time: str):
                 
                 # 自动生成MD报告
                 try:
+                    from contest_trade.config.config import PROJECT_ROOT
                     results_dir = Path(PROJECT_ROOT) / "agents_workspace" / "results"
                     from .static.report_template import generate_final_report, generate_data_report
                     
@@ -747,6 +756,8 @@ def display_data_report(final_state: Dict):
 
 def load_factors_data(trigger_time: str) -> Dict:
     """加载factors文件夹中的数据"""
+    from contest_trade.config.config import PROJECT_ROOT
+    
     factors_data = {
         'trigger_time': trigger_time,
         'agents': {}
@@ -889,26 +900,38 @@ def display_detailed_report(final_state: Dict):
 
 @app.command()
 def run(
-    trigger_time: Optional[str] = typer.Option(None, "--time", "-t", help="触发时间 (YYYY-MM-DD HH:MM:SS)"),
+    market: Optional[str] = typer.Option(None, "--market", "-m", help="选择市场 (CN-Stock/US-Stock)"),
 ):
     """运行ContestTrade分析"""
 
-    # 获取触发时间
-    if not trigger_time:
-        trigger_time = get_trigger_time()
+    # 获取市场选择
+    if not market:
+        market = get_market_selection()
+    
+    # 验证市场选择
+    if not market:
+        console.print("[red]未提供市场选择[/red]")
+        raise typer.Exit(1)
+    
+    if market not in ["CN-Stock", "US-Stock"]:
+        console.print("[red]市场选择错误，请选择 CN-Stock 或 US-Stock[/red]")
+        raise typer.Exit(1)
+    
+    # 设置环境变量 - 这样全局的 cfg 就会读取对应的配置
+    os.environ['CONTEST_TRADE_MARKET'] = market
+    
+    # 根据市场获取对应的触发时间
+    trigger_time = get_trigger_time_for_market(market)
     
     # 验证触发时间
     if not trigger_time:
-        console.print("[red]未提供触发时间[/red]")
+        console.print("[red]无法获取对应市场的触发时间[/red]")
         raise typer.Exit(1)
     
-    try:
-        datetime.strptime(trigger_time, "%Y-%m-%d %H:%M:%S")
-    except ValueError:
-        console.print("[red]触发时间格式错误，请使用 YYYY-MM-DD HH:MM:SS 格式[/red]")
-        raise typer.Exit(1)
+    console.print(f"[green]已选择市场: {market}[/green]")
+    console.print(f"[green]触发时间: {trigger_time}[/green]")
     
-    # 验证必需的服务连接（自动根据tushare_key决定验证策略）
+    # 验证必需的服务连接
     if not validate_required_services():
         console.print("[red]系统验证失败，无法启动分析[/red]")
         raise typer.Exit(1)
@@ -916,7 +939,7 @@ def run(
     # 主循环
     while True:
         try:
-            result = run_contest_analysis_interactive(trigger_time)
+            result = run_contest_analysis_interactive(trigger_time, market)
         except Exception as e:
             console.print(f"[red]运行分析时发生错误: {e}[/red]")
             break
@@ -928,10 +951,27 @@ def run(
         if isinstance(result, tuple):
             final_state, action = result
             if action == "new_analysis":
-                trigger_time = get_trigger_time()
+                # 重新选择市场
+                market = get_market_selection()
+                if not market:
+                    break
+                
+                # 设置环境变量
+                os.environ['CONTEST_TRADE_MARKET'] = market
+                
+                # 获取新的触发时间
+                trigger_time = get_trigger_time_for_market(market)
+                if not trigger_time:
+                    console.print("[red]无法获取对应市场的触发时间[/red]")
+                    break
+                
+                # 验证服务连接
                 if not validate_required_services():
                     console.print("[red]系统验证失败，无法启动分析[/red]")
                     break
+                
+                console.print(f"[green]已切换到市场: {market}[/green]")
+                console.print(f"[green]新触发时间: {trigger_time}[/green]")
                 continue
             elif action == "quit":
                 break
@@ -947,6 +987,9 @@ def run(
 def config():
     """显示当前配置"""
     try:
+        # Import config when needed
+        from contest_trade.config.config import cfg
+        
         if cfg is None:
             console.print("[red]配置模块导入失败[/red]")
             raise typer.Exit(1)

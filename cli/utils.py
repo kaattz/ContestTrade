@@ -3,8 +3,7 @@ from typing import List, Optional, Tuple, Dict
 from datetime import datetime, timedelta
 import tushare as ts
 from rich.console import Console
-from contest_trade.config.config import cfg
-from contest_trade.models.llm_model import GLOBAL_LLM
+import os
 
 console = Console()
 
@@ -35,6 +34,9 @@ def get_trigger_time() -> str:
 def validate_tushare_connection():
     """验证Tushare连接"""
     try:
+        # Import config when needed
+        from contest_trade.config.config import cfg
+        
         console.print("🔍 [cyan]正在验证Tushare配置...[/cyan]")
         ts.set_token(cfg.tushare_key)
         pro = ts.pro_api(cfg.tushare_key, timeout=3)
@@ -55,6 +57,9 @@ def validate_tushare_connection():
 def validate_llm_connection():
     """验证LLM连接"""
     try:
+        # Import LLM model when needed
+        from contest_trade.models.llm_model import GLOBAL_LLM
+        
         console.print("🔍 [cyan]正在验证LLM配置...[/cyan]")
         test_messages = [
             {"role": "user", "content": "请回复'连接测试成功'，不要添加任何其他内容。"}
@@ -72,6 +77,9 @@ def validate_llm_connection():
 
 def validate_required_services():
     """根据配置文件中的tushare_key自动决定验证策略"""
+    # Import config when needed
+    from contest_trade.config.config import cfg
+    
     console.print("\n" + "="*50)
     console.print("🔧 [bold blue]正在验证必要系统配置...[/bold blue]")
     console.print("="*50)
@@ -143,4 +151,78 @@ def extract_signal_info(signal: Dict) -> Dict:
         "probability": signal.get("probability", "N/A"),
         "has_opportunity": signal.get("has_opportunity", "N/A"),
     }
+
+def get_market_selection() -> str:
+    """获取用户市场选择 - 使用箭头键选择"""
+    market_options = [
+        "CN-Stock (A股市场)",
+        "US-Stock (美股市场)"
+    ]
+    
+    market_choice = questionary.select(
+        "请选择要分析的市场:",
+        choices=market_options,
+        style=questionary.Style([
+            ("text", "fg:white"),
+            ("highlighted", "fg:green bold"),
+            ("pointer", "fg:green"),
+        ])
+    ).ask()
+    
+    # 如果用户取消选择
+    if market_choice is None:
+        return None
+    
+    # 根据选择返回对应的市场代码
+    if market_choice == market_options[0]:
+        return "CN-Stock"
+    elif market_choice == market_options[1]:
+        return "US-Stock"
+    else:
+        return None
+
+def get_trigger_time_for_market(market: str) -> str:
+    """根据市场获取对应的触发时间，并设置环境变量"""
+    # 设置环境变量
+    os.environ['CONTEST_TRADE_MARKET'] = market
+    
+    # 根据市场获取触发时间
+    if market == "CN-Stock":
+        # A股市场使用当前交易日
+        return get_trigger_time()
+    elif market == "US-Stock":
+        # 美股市场使用美东时区时间
+        from datetime import datetime, timezone, timedelta
+        
+        try:
+            # 尝试使用 pytz 获取美东时区
+            import pytz
+            eastern_tz = pytz.timezone('America/New_York')
+            now = datetime.now(eastern_tz)
+            console.print(f"🇺🇸 [cyan]使用美东时区: {now.strftime('%Y-%m-%d %H:%M:%S %Z')}[/cyan]")
+        except ImportError:
+            # 如果没有 pytz，使用简单的时区计算（考虑夏令时）
+            from datetime import datetime
+            import time
+            
+            # 检查是否为夏令时（简化版本：3月第二个周日到11月第一个周日）
+            now_utc = datetime.now(timezone.utc)
+            is_dst = time.daylight and time.localtime().tm_isdst > 0
+            
+            if is_dst:
+                # 夏令时 EDT = UTC-4
+                offset_hours = -4
+                tz_name = "EDT"
+            else:
+                # 标准时间 EST = UTC-5  
+                offset_hours = -5
+                tz_name = "EST"
+            
+            eastern_tz = timezone(timedelta(hours=offset_hours))
+            now = now_utc.astimezone(eastern_tz)
+            console.print(f"🇺🇸 [cyan]使用美东时区: {now.strftime('%Y-%m-%d %H:%M:%S')} {tz_name}[/cyan]")
+        
+        return now.strftime("%Y-%m-%d %H:%M:%S")
+    else:
+        return None
 
