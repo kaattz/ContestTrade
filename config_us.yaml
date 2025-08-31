@@ -16,6 +16,9 @@ finnhub_key: ""
 #YOUR_ALPHA_VANTAGE_KEY
 alpha_vantage_key: ""
 
+# YOUR_POLYGON_KEY
+polygon_key: ""
+
 llm:
   base_url: "https://api.deepseek.com"
   api_key: "" #YOUR_DEEPSEEK_API_KEY
@@ -33,12 +36,9 @@ vlm:
 
 # US Market specific data agents configuration
 data_agents_config:
-  - agent_name: "akshare_us_market"
+  - agent_name: "us_polygon_news"
     data_source_list: 
-      - "data_source.akshare_us_market.AkshareUSMarket"
-  - agent_name: "us_polygen_news"
-    data_source_list: 
-      - "data_source.us_polygen_news.USPolygonNews"
+      - "data_source.us_polygon_news.USPolygonNews"
   - agent_name: "us_price_market"
     data_source_list: 
       - "data_source.us_price_market.USPriceMarket"

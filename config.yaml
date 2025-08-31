@@ -61,6 +61,8 @@ research_agent_config:
     - "tools.stock_summary_akshare.stock_summary"
     - "tools.final_report.final_report"
 
+market_config_file: "config/market_config.yaml"
+
 # Tushare配套配置如下，请自行设置
 # The configuration for Tushare is as follows, please set it up yourself.
 

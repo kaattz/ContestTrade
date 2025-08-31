@@ -57,7 +57,7 @@ class USPolygonNews(DataSourceBase):
                 })
             
             df = pd.DataFrame(result_data)
-            print(df)
+            df['pub_time'] = df['pub_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
             self.save_data_cached(trigger_time, df)
             
             logger.info(f"获取美股财经新闻从 {previous_trading_date} 到 {trigger_time} 成功。总计 {len(df)} 条")

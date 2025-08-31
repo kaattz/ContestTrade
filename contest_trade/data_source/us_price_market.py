@@ -237,4 +237,5 @@ class USPriceMarket(DataSourceBase):
 
 if __name__ == "__main__":
     price_market = USPriceMarket()
-    print(asyncio.run(price_market.get_data("2024-12-01 15:00:00")))
+    result = asyncio.run(price_market.get_data("2024-12-01 15:00:00"))
+    print(result['content'].values.tolist())

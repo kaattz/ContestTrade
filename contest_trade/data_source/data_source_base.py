@@ -18,7 +18,10 @@ class DataSourceBase:
         cache_file_name = trigger_time.replace(" ", "_").replace(":", "-")
         cache_file = self.data_cache_dir / f"{cache_file_name}.pkl"
         if cache_file.exists():
-            return pd.read_pickle(cache_file)
+            df = pd.read_pickle(cache_file)
+            if df['pub_time'].dtype == 'datetime64[ns]':
+                df['pub_time'] = df['pub_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
+            return df
         else:
             return None
 
