@@ -12,6 +12,7 @@ from utils.fmp_utils import get_us_stock_price
 from models.llm_model import GLOBAL_LLM
 from loguru import logger
 from utils.date_utils import get_previous_trading_date
+from config.config import cfg
 
 
 class USPriceMarket(DataSourceBase):
@@ -21,17 +22,17 @@ class USPriceMarket(DataSourceBase):
     def _get_sector_performance(self, trade_date_str: str) -> dict:
         """获取美股行业表现"""
         sector_etfs = {
-            'XLK': '科技',
-            'XLF': '金融', 
-            'XLE': '能源',
-            'XLV': '医疗',
-            'XLI': '工业',
-            'XLY': '消费(可选)',
-            'XLP': '消费(必需)',
-            'XLU': '公用事业',
-            'XLB': '材料',
-            'XLRE': '房地产',
-            'XLC': '通信'
+            'XLK': 'Technology',
+            'XLF': 'Financial', 
+            'XLE': 'Energy',
+            'XLV': 'Healthcare',
+            'XLI': 'Industrial',
+            'XLY': 'Consumer Discretionary',
+            'XLP': 'Consumer Staples',
+            'XLU': 'Utilities',
+            'XLB': 'Materials',
+            'XLRE': 'Real Estate',
+            'XLC': 'Communication Services'
         }
         
         performance_data = {}
@@ -60,13 +61,13 @@ class USPriceMarket(DataSourceBase):
                     }
                     
             except Exception as e:
-                logger.warning(f"获取{etf}({sector_name})数据失败: {e}")
+                logger.warning(f"Failed to get data for {etf}({sector_name}): {e}")
                 continue
                 
         return performance_data
 
     def _get_market_breadth(self, trade_date_str: str) -> dict:
-        """获取市场广度数据"""
+        """Get market breadth data"""
         try:
             # 主要指数
             indices = ['SPY', 'QQQ', 'DIA', 'IWM']
@@ -97,26 +98,26 @@ class USPriceMarket(DataSourceBase):
             return index_data
             
         except Exception as e:
-            logger.error(f"获取市场广度数据失败: {e}")
+            logger.error(f"Failed to get market breadth data: {e}")
             return {}
 
     async def _generate_llm_summary(self, trade_date: str) -> dict:
-        """使用LLM生成市场分析摘要"""
+        """Use LLM to generate market analysis summary"""
         try:
             # 获取数据
             sector_data = self._get_sector_performance(trade_date)
             market_data = self._get_market_breadth(trade_date)
             
             # 构造分析内容
-            analysis_content = f"""美股市场数据分析 - {trade_date[:4]}-{trade_date[4:6]}-{trade_date[6:]}
+            analysis_content = f"""US Stock Market Data Analysis - {trade_date[:4]}-{trade_date[4:6]}-{trade_date[6:]}
 
-【主要指数表现】
+[Major Index Performance]
 """
             
             for symbol, data in market_data.items():
                 analysis_content += f"{symbol}: {data['close']:.2f} ({data['change_pct']:+.2f}%)\n"
             
-            analysis_content += "\n【行业板块表现】\n"
+            analysis_content += "\n[Sector Performance]\n"
             
             # 按涨跌幅排序
             sorted_sectors = sorted(sector_data.items(), key=lambda x: x[1]['change_pct'], reverse=True)
@@ -124,32 +125,32 @@ class USPriceMarket(DataSourceBase):
             for sector_name, data in sorted_sectors:
                 analysis_content += f"{sector_name}({data['symbol']}): {data['close']:.2f} ({data['change_pct']:+.2f}%)\n"
             
-            analysis_content += "\n【资金流向分析】\n"
+            analysis_content += "\n[Capital Flow Analysis]\n"
             
             # 分析成交量 TODO：FMP没有volume_ratio，后面需要补充
             high_volume_sectors = [name for name, data in sector_data.items() if data['volume_ratio'] > 1.2]
             if high_volume_sectors:
-                analysis_content += f"成交量活跃板块: {', '.join(high_volume_sectors)}\n"
+                analysis_content += f"Active volume sectors: {', '.join(high_volume_sectors)}\n"
             
             # LLM分析
-            prompt = f"""请基于以下美股市场数据，生成简洁的投资洞察分析（200字以内）：
+            prompt = f"""Based on the following US stock market data, generate a concise investment insight analysis (within 200 words):
 
 {analysis_content}
 
-要求：
-1. 分析主要指数和板块的表现特点
-2. 识别资金流向和热点板块
-3. 提供简要的市场判断和风险提示
-4. 语言简洁专业"""
+Requirements:
+1. Analyze the performance characteristics of major indices and sectors
+2. Identify capital flows and hot sectors
+3. Provide brief market judgment and risk warnings
+4. Please respond in {cfg.system_language} language, concise and professional"""
 
             try:
                 llm_response = await GLOBAL_LLM.a_run([{"role": "user", "content": prompt}], verbose=False)
                 llm_summary = llm_response.content if hasattr(llm_response, 'content') else str(llm_response)
             except Exception as e:
-                logger.warning(f"LLM分析失败: {e}")
-                llm_summary = "LLM分析暂不可用，请参考上述数据进行判断。"
+                logger.warning(f"LLM analysis failed: {e}")
+                llm_summary = "LLM analysis is temporarily unavailable, please refer to the above data for judgment."
             
-            final_content = analysis_content + f"\n【AI市场洞察】\n{llm_summary}"
+            final_content = analysis_content + f"\n[AI Market Insights]\n{llm_summary}"
             
             return {
                 "llm_summary": final_content,
@@ -160,9 +161,9 @@ class USPriceMarket(DataSourceBase):
             }
             
         except Exception as e:
-            logger.error(f"生成LLM分析失败: {e}")
+            logger.error(f"Failed to generate LLM analysis: {e}")
             return {
-                "llm_summary": f"市场数据分析生成失败: {str(e)}",
+                "llm_summary": f"Market data analysis generation failed: {str(e)}",
                 "raw_data": {}
             }
 
@@ -175,14 +176,14 @@ class USPriceMarket(DataSourceBase):
             
             # 获取交易日
             trade_date = get_previous_trading_date(trigger_time)
-            logger.info(f"获取 {trade_date} 的美股价格市场数据")
+            logger.info(f"Getting US stock price market data for {trade_date}")
 
             # 生成LLM分析
             llm_summary_dict = await self._generate_llm_summary(trade_date)
             
             # 构造返回数据
             data = [{
-                "title": f"{trade_date}:美股市场宏观数据汇总",
+                "title": f"{trade_date}: US Stock Market Macro Data Summary",
                 "content": llm_summary_dict["llm_summary"],
                 "pub_time": trigger_time,
                 "url": None
@@ -223,15 +224,15 @@ class USPriceMarket(DataSourceBase):
             
             # 只有当两个部分都有具体数据时才缓存
             if has_market_data and has_sector_data:
-                logger.info(f"数据完整，缓存 {trade_date} 的美股价格市场数据")
+                logger.info(f"Data complete, caching US stock price market data for {trade_date}")
                 self.save_data_cached(trigger_time, df)
             else:
-                logger.warning(f"数据不完整，跳过缓存 {trade_date} 的美股价格市场数据 (市场数据: {has_market_data}, 板块数据: {has_sector_data})")
+                logger.warning(f"Data incomplete, skipping cache for US stock price market data for {trade_date} (market data: {has_market_data}, sector data: {has_sector_data})")
             
             return df
                 
         except Exception as e:
-            logger.error(f"获取美股价格市场数据失败: {e}")
+            logger.error(f"Failed to get US stock price market data: {e}")
             return pd.DataFrame()
 
 
