@@ -160,7 +160,7 @@ def get_market_selection() -> str:
     ]
     
     market_choice = questionary.select(
-        "请选择要分析的市场:",
+        "请选择要分析的市场(Please select a market to analyze):",
         choices=market_options,
         style=questionary.Style([
             ("text", "fg:white"),
