@@ -56,7 +56,7 @@ pip install -r requirements.txt
 Or deploy with [Docker](https://docs.n8n.io/hosting/installation/docker/):
 
 ```
-docker run -it --rm --name contest_trade -v $(pwd)/config.yaml:/ContestTrade/config.yaml finstep/contesttrade:v1.1
+docker run -it --rm --name contest_trade -v $(pwd)/config.yaml:/ContestTrade/config.yaml finstep/contesttrade:v2.0
 ```
 
 ## Configuration
