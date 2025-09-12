@@ -687,6 +687,7 @@ try:
         api_key=cfg.llm_thinking.get("api_key"),
         base_url=cfg.llm_thinking.get("base_url")
     )
+    assert GLOBAL_VLM_CONFIG.api_key is not None
     GLOBAL_THINKING_LLM = LLMModel(GLOBAL_THINKING_LLM_CONFIG)
 except Exception as e:
     print(f"加载thinking模型失败，使用llm模型替代: {e}")
@@ -700,6 +701,7 @@ try:
         api_key=cfg.vlm.get("api_key"),
         base_url=cfg.vlm.get("base_url")
     )
+    assert GLOBAL_VLM_CONFIG.api_key is not None
     GLOBAL_VISION_LLM = LLMModel(GLOBAL_VLM_CONFIG)
 except Exception as e:
     print(f"加载vlm模型失败，vision能力不可用: {e}")
