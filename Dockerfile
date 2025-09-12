@@ -2,7 +2,7 @@
 FROM continuumio/miniconda3:latest AS compile-image
 WORKDIR /ContestTrade
 COPY requirements.txt .
-# RUN conda update conda
+RUN apt-get update && apt-get install -y build-essential
 RUN conda create -n contesttrade python=3.10
 
 RUN echo "conda activate contesttrade" >> ~/.bashrc
