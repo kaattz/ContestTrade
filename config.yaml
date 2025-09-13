@@ -55,26 +55,25 @@ finnhub_key: ""
 # ==================================================
 
 llm:
-  provider: ""
+  provider: "openai"
   base_url: "https://api.deepseek.com"
   #YOUR_DEEPSEEK_API_KEY
   api_key: null 
   model_name: "deepseek-chat"
 
 llm_thinking:
-  provider: ""
+  provider: "openai"
   base_url: "https://api.deepseek.com"
   #YOUR_DEEPSEEK_API_KEY
   api_key: null 
   model_name: "deepseek-reasoner"
 
 vlm:
-  provider: ""
+  provider: "openai"
   base_url: "https://api.stepfun.com/v1"
   #YOUR_STEPFUN_API_KEY
   api_key: null 
   model_name: "step-1o-turbo-vision"
-
 
 
 data_agents_config:
