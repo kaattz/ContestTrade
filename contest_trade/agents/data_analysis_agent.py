@@ -70,7 +70,7 @@ class DataAnalysisAgentConfig:
         source_list: List[str] = [],
         max_concurrent_tasks: int = 6,
         credits_per_batch: int = 10,
-        content_cutoff_length: int = 2000,
+        content_cutoff_length: int = 6000,
         max_llm_context: int = 28000,
         llm_call_num: int = 2,
         final_target_tokens: int = 4000, 
@@ -499,7 +499,10 @@ class DataAnalysisAgent:
             
             # Truncate content
             if len(content) > self.config.content_cutoff_length:
-                content = content[:self.config.content_cutoff_length] + "..."
+                # 对宏观市场类长文本，尽量避免截断；若必须截断，仅在超长时添加省略号
+                content = content[:self.config.content_cutoff_length]
+                if not content.endswith("。") and not content.endswith("!") and not content.endswith("？"):
+                    content += "..."
             
             if pub_time.endswith("23:59:59"):
                 pub_time = pub_time.split(" ")[0]

@@ -24,11 +24,21 @@ class PriceMarket(DataSourceBase):
                 return df
             
             trade_date = get_previous_trading_date(trigger_time)     
+            # 如果触发日为交易日且已有当日数据，则优先使用触发日
+            try:
+                trigger_day = datetime.strptime(trigger_time, '%Y-%m-%d %H:%M:%S').strftime('%Y%m%d')
+                if trigger_day != trade_date:
+                    same_day = TushareDataProvider.get_current_day_kline_data(trigger_day)
+                    if isinstance(same_day, dict) and len(same_day) > 0:
+                        trade_date = trigger_day
+                        logger.info(f"触发当日({trigger_day})为交易日，使用当日数据")
+            except Exception:
+                pass
             logger.info(f"获取 {trade_date} 的价格市场数据")
 
             llm_summary_dict = await self.get_llm_summary(trade_date)
             data = [{
-                "title": f"{trade_date}:市场宏观数据汇总",
+                "title": f"{trade_date} 市场宏观数据汇总（触发时间 {trigger_time}）",
                 "content": llm_summary_dict["llm_summary"],
                 "pub_time": trigger_time,
                 "url": None
