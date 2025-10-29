@@ -11,17 +11,21 @@ PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 class ProjectConfig:
 
     def __init__(self) -> None:
-        # Get market type from environment variable, default to CN-Stock
+        # Allow overriding config file via env var for advanced scenarios
+        override_path = os.environ.get('CONTEST_TRADE_CONFIG_FILE')
         market_type = os.environ.get('CONTEST_TRADE_MARKET', 'CN-Stock')
-        
-        # Choose config file based on market type
-        if market_type == 'US-Stock':
-            config_filename = "config_us.yaml"
+
+        if override_path and Path(override_path).exists():
+            yaml_path = Path(override_path)
+            print(f"Loading config from: {yaml_path} (Override via CONTEST_TRADE_CONFIG_FILE)")
         else:
-            config_filename = "config.yaml"
-        
-        yaml_path = PROJECT_ROOT.parent / config_filename
-        print(f"Loading config from: {yaml_path} (Market: {market_type})")
+            # Choose config file based on market type
+            if market_type == 'US-Stock':
+                config_filename = "config_us.yaml"
+            else:
+                config_filename = "config.yaml"
+            yaml_path = PROJECT_ROOT.parent / config_filename
+            print(f"Loading config from: {yaml_path} (Market: {market_type})")
 
         with open(yaml_path, "r", encoding="utf-8") as fr:
             config = yaml.load(fr, Loader=yaml.FullLoader)

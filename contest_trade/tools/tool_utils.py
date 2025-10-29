@@ -54,20 +54,25 @@ class ToolManager:
         return name
     
     def register_from_module_path(self, module_path: str):
-        """Register tool function from module path"""
+        """Register tool function/object from module path.
+
+        Accepts both plain async callables and LangChain Tool-like objects
+        that expose `.ainvoke`/`.invoke` and have a `name` attribute.
+        """
         try:
             parts = module_path.split('.')
             func_name = parts[-1]
             module_name = '.'.join(parts[:-1])
-            
+
             module = importlib.import_module(module_name)
             func = getattr(module, func_name)
-            
-            if not callable(func):
-                raise ValueError(f"{module_path} is not callable")
-            
-            return self.register_function(func)
-            
+
+            # Accept either callable or Tool-like object
+            if callable(func) or hasattr(func, 'ainvoke') or hasattr(func, 'invoke'):
+                return self.register_function(func)
+            else:
+                raise ValueError(f"{module_path} is not callable and has no invoke/ainvoke")
+
         except (ImportError, AttributeError) as e:
             raise ValueError(f"Cannot import {module_path}: {e}")
     

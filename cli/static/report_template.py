@@ -366,6 +366,29 @@ class FinalReportGenerator:
         
         return table
 
+def _write_pdf_from_text(text: str, pdf_path: Path):
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.units import mm
+        import textwrap
+        pdf_path.parent.mkdir(parents=True, exist_ok=True)
+        c = canvas.Canvas(str(pdf_path), pagesize=A4)
+        width, height = A4
+        x_margin, y_start = 20 * mm, height - 20 * mm
+        textobj = c.beginText()
+        textobj.setTextOrigin(x_margin, y_start)
+        textobj.setFont("Helvetica", 10)
+        for line in text.splitlines():
+            for wrapped in textwrap.wrap(line, width=100):
+                textobj.textLine(wrapped)
+        c.drawText(textobj)
+        c.showPage()
+        c.save()
+    except Exception:
+        pass
+
+
 def generate_data_report(factors_data: Dict, results_dir: Path) -> tuple[str, Path]:
     """生成数据报告"""
     
@@ -380,14 +403,20 @@ def generate_data_report(factors_data: Dict, results_dir: Path) -> tuple[str, Pa
     else:
         safe_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     
-    filename = f"data_report_{safe_time}.md"
-    data_reports_dir = results_dir / "data_reports"
-    data_reports_dir.mkdir(parents=True, exist_ok=True)
-    save_path = data_reports_dir / filename
-    
-    markdown_content = generator.generate_markdown_report(save_path)
-    
-    return markdown_content, save_path
+    # Directories
+    markdown_dir = results_dir / "markdown"
+    pdf_dir = results_dir / "pdf"
+    markdown_dir.mkdir(parents=True, exist_ok=True)
+    pdf_dir.mkdir(parents=True, exist_ok=True)
+
+    md_path = markdown_dir / f"data_report_{safe_time}.md"
+    markdown_content = generator.generate_markdown_report(md_path)
+
+    # Also export PDF
+    pdf_path = pdf_dir / f"data_report_{safe_time}.pdf"
+    _write_pdf_from_text(markdown_content, pdf_path)
+
+    return markdown_content, md_path
 
 
 def display_data_report_interactive(factors_data: Dict, results_dir: Path):
@@ -412,13 +441,19 @@ def generate_final_report(final_state: Dict, results_dir: Path) -> tuple[str, Pa
     if trigger_time != 'N/A' and trigger_time is not None:
         safe_time = trigger_time.replace(' ', '_').replace(':', '-')
     
-    filename = f"final_report_{safe_time}.md"
-    research_reports_dir = results_dir / "research_reports"
-    research_reports_dir.mkdir(parents=True, exist_ok=True)
-    save_path = research_reports_dir / filename
-    markdown_content = generator.generate_markdown_report(save_path)
-    
-    return markdown_content, save_path
+    # Directories
+    markdown_dir = results_dir / "markdown"
+    pdf_dir = results_dir / "pdf"
+    markdown_dir.mkdir(parents=True, exist_ok=True)
+    pdf_dir.mkdir(parents=True, exist_ok=True)
+
+    md_path = markdown_dir / f"final_report_{safe_time}.md"
+    markdown_content = generator.generate_markdown_report(md_path)
+
+    pdf_path = pdf_dir / f"final_report_{safe_time}.pdf"
+    _write_pdf_from_text(markdown_content, pdf_path)
+
+    return markdown_content, md_path
 
 
 def display_final_report_interactive(final_state: Dict, results_dir: Path):

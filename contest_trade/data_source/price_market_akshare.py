@@ -30,12 +30,26 @@ class PriceMarketAkshare(DataSourceBase):
             if df is not None:
                 return df
             
-            trade_date = get_previous_trading_date(trigger_time)     
+            # 先按“上一个或等于触发日的最近交易日”计算
+            trade_date = get_previous_trading_date(trigger_time)
+
+            # 若触发时间在当日收盘前（例如 09:00 或 14:00），强制回退到上一个交易日，避免当日收盘/资金数据缺失
+            try:
+                _dt = datetime.strptime(trigger_time, '%Y-%m-%d %H:%M:%S')
+            except Exception:
+                _dt = datetime.strptime(trigger_time.split(' ')[0] + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
+            if _dt.hour < 15:  # A股收盘时间为15:00
+                _today_str = _dt.strftime('%Y%m%d')
+                if trade_date == _today_str:
+                    _prev_dt = _dt - pd.Timedelta(days=1)
+                    _prev_trigger = _prev_dt.strftime('%Y-%m-%d %H:%M:%S')
+                    trade_date = get_previous_trading_date(_prev_trigger)
+
             logger.info(f"获取 {trade_date} 的价格市场数据")
 
             llm_summary_dict = await self.get_llm_summary(trade_date)
             data = [{
-                "title": f"{trade_date}:市场宏观数据汇总",
+                "title": f"{trade_date} 市场宏观数据汇总（触发时间 {trigger_time}）",
                 "content": llm_summary_dict["llm_summary"],
                 "pub_time": trigger_time,
                 "url": None

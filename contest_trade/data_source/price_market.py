@@ -34,6 +34,19 @@ class PriceMarket(DataSourceBase):
                         logger.info(f"触发当日({trigger_day})为交易日，使用当日数据")
             except Exception:
                 pass
+
+            # 若触发时间在当日收盘前（如 09:00 或 14:00），强制回退到上一个交易日
+            try:
+                _dt = datetime.strptime(trigger_time, '%Y-%m-%d %H:%M:%S')
+            except Exception:
+                _dt = datetime.strptime(trigger_time.split(' ')[0] + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
+            # 收盘时间 15:00
+            if _dt.hour < 15 or (_dt.hour == 15 and _dt.minute < 0):
+                _today_str = _dt.strftime('%Y%m%d')
+                if trade_date == _today_str:
+                    _prev_dt = _dt - pd.Timedelta(days=1)
+                    _prev_trigger = _prev_dt.strftime('%Y-%m-%d %H:%M:%S')
+                    trade_date = get_previous_trading_date(_prev_trigger)
             logger.info(f"获取 {trade_date} 的价格市场数据")
 
             llm_summary_dict = await self.get_llm_summary(trade_date)
