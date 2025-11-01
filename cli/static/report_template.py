@@ -17,6 +17,19 @@ from rich.align import Align
 from rich import box
 import re
 
+# Use the new Markdown→HTML→PDF exporter
+try:
+    from ..export.md_to_pdf import export_markdown_to_pdf
+except Exception:
+    export_markdown_to_pdf = None
+
+# Extra CSS for data_report only: increase nested list indent
+DATA_REPORT_EXTRA_CSS = (
+    ".markdown-body li > ul, .markdown-body li > ol { margin-left: 2.2em; }\n"
+    ".markdown-body ul ul, .markdown-body ol ol { margin-left: 2.0em; }\n"
+    ".markdown-body ol > li > ul, .markdown-body ul > li > ol { margin-left: 2.2em; }\n"
+)
+
 class DataReportGenerator:
     """数据报告生成器"""
     
@@ -225,14 +238,14 @@ class FinalReportGenerator:
                         desc = evidence.get('description', 'N/A')
                         source = evidence.get('from_source', 'N/A')
                         time = evidence.get('time', 'N/A')
-                        report_content += f"  {j}. **{desc}** ({self.get_text('来源', 'Source')}: {source}, {self.get_text('时间', 'Time')}: {time})\n"
+                        report_content += f"    {j}. **{desc}** ({self.get_text('来源', 'Source')}: {source}, {self.get_text('时间', 'Time')}: {time})\n"
                 
                 # 风险提示
                 limitations = signal.get('limitations', [])
                 if limitations:
                     report_content += f"- **{self.get_text('风险提示', 'Risk Warnings')}**:\n"
                     for limitation in limitations:
-                        report_content += f"  - {limitation}\n"
+                        report_content += f"    - {limitation}\n"
                 
                 report_content += "\n"
         else:
@@ -366,25 +379,33 @@ class FinalReportGenerator:
         
         return table
 
-def _write_pdf_from_text(text: str, pdf_path: Path):
+def _write_pdf_from_text(text: str, pdf_path: Path, *, extra_css: str | None = None, normalize_ol_sublist: bool = False):
+    """Legacy shim retained for compatibility; now delegates to HTML renderer.
+
+    For better fidelity, we convert Markdown text to HTML using the new
+    `export_markdown_to_pdf` path by writing a temporary markdown next to
+    the desired PDF and producing a same-stem PDF.
+    """
     try:
-        from reportlab.lib.pagesizes import A4
-        from reportlab.pdfgen import canvas
-        from reportlab.lib.units import mm
-        import textwrap
-        pdf_path.parent.mkdir(parents=True, exist_ok=True)
-        c = canvas.Canvas(str(pdf_path), pagesize=A4)
-        width, height = A4
-        x_margin, y_start = 20 * mm, height - 20 * mm
-        textobj = c.beginText()
-        textobj.setTextOrigin(x_margin, y_start)
-        textobj.setFont("Helvetica", 10)
-        for line in text.splitlines():
-            for wrapped in textwrap.wrap(line, width=100):
-                textobj.textLine(wrapped)
-        c.drawText(textobj)
-        c.showPage()
-        c.save()
+        if export_markdown_to_pdf is None:
+            # If exporter not available, skip silently
+            return
+        tmp_md = pdf_path.with_suffix('.md')
+        tmp_md.write_text(text, encoding='utf-8')
+        export_markdown_to_pdf(
+            tmp_md,
+            output_dir=pdf_path.parent,
+            html_filename=f"{pdf_path.stem}.html",
+            pdf_filename=pdf_path.name,
+            title="ContestTrade Report",
+            extra_css=extra_css,
+            normalize_ol_sublist=normalize_ol_sublist,
+        )
+        # Optionally remove the temporary markdown if it wasn't originally requested
+        try:
+            tmp_md.unlink(missing_ok=True)
+        except Exception:
+            pass
     except Exception:
         pass
 
@@ -414,7 +435,13 @@ def generate_data_report(factors_data: Dict, results_dir: Path) -> tuple[str, Pa
 
     # Also export PDF
     pdf_path = pdf_dir / f"data_report_{safe_time}.pdf"
-    _write_pdf_from_text(markdown_content, pdf_path)
+    # Increase nested list indent specifically for data report
+    _write_pdf_from_text(
+        markdown_content,
+        pdf_path,
+        extra_css=DATA_REPORT_EXTRA_CSS,
+        normalize_ol_sublist=True,
+    )
 
     return markdown_content, md_path
 
@@ -451,6 +478,7 @@ def generate_final_report(final_state: Dict, results_dir: Path) -> tuple[str, Pa
     markdown_content = generator.generate_markdown_report(md_path)
 
     pdf_path = pdf_dir / f"final_report_{safe_time}.pdf"
+    # Keep final_report export format unchanged (no extra CSS)
     _write_pdf_from_text(markdown_content, pdf_path)
 
     return markdown_content, md_path

@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 import tushare as ts
 from rich.console import Console
 import os
+import sys
+from pathlib import Path
 
 console = Console()
 
@@ -31,11 +33,52 @@ def get_trigger_time() -> str:
     else:
         return f"{now.strftime('%Y-%m-%d %H:%M:%S')}"
 
+def _load_cfg():
+    """Robust loader for cfg that works for both `-m ContestTrade.cli.main`
+    and `-m cli.main` invocation styles.
+    """
+    try:
+        from ..contest_trade.config.config import cfg  # type: ignore
+        return cfg
+    except Exception:
+        # Fallback to absolute import when running as `-m cli.main`
+        try:
+            from contest_trade.config.config import cfg  # type: ignore
+            return cfg
+        except Exception:
+            # As last resort, add parent of repo root to path and try package import
+            here = Path(__file__).resolve()
+            repo_root = here.parents[1]  # ContestTrade/cli
+            parent_dir = repo_root.parent
+            if str(parent_dir) not in sys.path:
+                sys.path.insert(0, str(parent_dir))
+            from ContestTrade.contest_trade.config.config import cfg  # type: ignore
+            return cfg
+
+
+def _load_llm():
+    try:
+        from ..contest_trade.models.llm_model import GLOBAL_LLM  # type: ignore
+        return GLOBAL_LLM
+    except Exception:
+        try:
+            from contest_trade.models.llm_model import GLOBAL_LLM  # type: ignore
+            return GLOBAL_LLM
+        except Exception:
+            here = Path(__file__).resolve()
+            repo_root = here.parents[1]
+            parent_dir = repo_root.parent
+            if str(parent_dir) not in sys.path:
+                sys.path.insert(0, str(parent_dir))
+            from ContestTrade.contest_trade.models.llm_model import GLOBAL_LLM  # type: ignore
+            return GLOBAL_LLM
+
+
 def validate_tushare_connection():
     """验证Tushare连接"""
     try:
-        # Import config when needed
-        from contest_trade.config.config import cfg
+        # Import config using robust loader
+        cfg = _load_cfg()
         
         console.print("🔍 [cyan]正在验证Tushare配置...[/cyan]")
         ts.set_token(cfg.tushare_key)
@@ -57,8 +100,8 @@ def validate_tushare_connection():
 def validate_llm_connection():
     """验证LLM连接"""
     try:
-        # Import LLM model when needed
-        from contest_trade.models.llm_model import GLOBAL_LLM
+        # Import LLM model using robust loader
+        GLOBAL_LLM = _load_llm()
         
         console.print("🔍 [cyan]正在验证LLM配置...[/cyan]")
         test_messages = [
@@ -77,8 +120,8 @@ def validate_llm_connection():
 
 def validate_required_services():
     """根据配置文件中的tushare_key自动决定验证策略"""
-    # Import config when needed
-    from contest_trade.config.config import cfg
+    # Import config when needed (robust loader)
+    cfg = _load_cfg()  # type: ignore
     
     console.print("\n" + "="*50)
     console.print("🔧 [bold blue]正在验证必要系统配置...[/bold blue]")

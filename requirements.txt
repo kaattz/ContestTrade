@@ -18,4 +18,5 @@ tabulate
 akshare
 crawl4ai
 lightgbm
-reportlab
+markdown
+weasyprint

@@ -236,3 +236,4 @@ test*
 *tmp*
 *_cache
 config.yaml
+config_single.yaml

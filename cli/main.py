@@ -23,6 +23,8 @@ from rich import box
 from .utils import get_trigger_time, validate_required_services
 from .static.report_template import display_final_report_interactive
 from .utils import get_trigger_time_for_market, get_market_selection
+import sys
+from pathlib import Path
 
 console = Console()
 
@@ -37,12 +39,39 @@ app = typer.Typer(
     add_completion=True,
 )
 
+def _import_project_config():
+    """Robustly import cfg and PROJECT_ROOT for both invocation modes.
+
+    Supports `python -m ContestTrade.cli.main` and `python -m cli.main`.
+    """
+    try:
+        from ..contest_trade.config.config import cfg, PROJECT_ROOT  # type: ignore
+        return cfg, PROJECT_ROOT
+    except Exception:
+        # Try direct package from current repo root (when running as -m cli.main)
+        try:
+            from contest_trade.config.config import cfg, PROJECT_ROOT  # type: ignore
+            return cfg, PROJECT_ROOT
+        except Exception:
+            # Add parent of repo to path and import full package path
+            here = Path(__file__).resolve()
+            repo_root = here.parents[1]  # ContestTrade/cli
+            parent_dir = repo_root.parent
+            if str(parent_dir) not in sys.path:
+                sys.path.insert(0, str(parent_dir))
+            from ContestTrade.contest_trade.config.config import cfg, PROJECT_ROOT  # type: ignore
+            return cfg, PROJECT_ROOT
+
+
 def _get_agent_config():
     """从配置文件动态获取代理配置"""
     # Import config after environment variable is set
-    from contest_trade.config.config import cfg, PROJECT_ROOT
+    cfg, PROJECT_ROOT = _import_project_config()
     import sys
-    sys.path.append(str(PROJECT_ROOT))
+    # Ensure parent of `contest_trade` is importable for any absolute imports
+    parent_root = PROJECT_ROOT.parent
+    if str(parent_root) not in sys.path:
+        sys.path.append(str(parent_root))
     
     agent_status = {}
     
@@ -79,7 +108,7 @@ class ContestTradeDisplay:
         self._last_console_size = None  # 用于检测控制台大小变化
         
         # 日志监控相关 - Import PROJECT_ROOT when needed
-        from contest_trade.config.config import PROJECT_ROOT
+        _, PROJECT_ROOT = _import_project_config()
         self.logs_dir = Path(PROJECT_ROOT) / "agents_workspace" / "logs"
         self.logs_dir.mkdir(parents=True, exist_ok=True)
         
@@ -94,7 +123,7 @@ class ContestTradeDisplay:
     def check_agent_status_from_events_and_files(self, trigger_time: str):
         """基于事件和文件系统更新agent状态"""
         # Import PROJECT_ROOT when needed
-        from contest_trade.config.config import PROJECT_ROOT
+        _, PROJECT_ROOT = _import_project_config()
         
         # 格式化时间戳用于文件匹配
         timestamp_str = trigger_time.replace("-", "-").replace(":", "-").replace(" ", "_")
@@ -439,7 +468,7 @@ def run_contest_analysis_interactive(trigger_time: str, market: str):
                 
                 # 自动生成MD报告
                 try:
-                    from contest_trade.config.config import PROJECT_ROOT
+                    _, PROJECT_ROOT = _import_project_config()
                     results_dir = Path(PROJECT_ROOT) / "agents_workspace" / "results"
                     from .static.report_template import generate_final_report, generate_data_report
                     
@@ -762,7 +791,7 @@ def display_data_report(final_state: Dict):
 
 def load_factors_data(trigger_time: str) -> Dict:
     """加载factors文件夹中的数据"""
-    from contest_trade.config.config import PROJECT_ROOT
+    _, PROJECT_ROOT = _import_project_config()
     
     factors_data = {
         'trigger_time': trigger_time,
@@ -994,7 +1023,7 @@ def config():
     """显示当前配置"""
     try:
         # Import config when needed
-        from contest_trade.config.config import cfg
+        cfg, _ = _import_project_config()
         
         if cfg is None:
             console.print("[red]配置模块导入失败[/red]")
@@ -1030,6 +1059,55 @@ def version():
     console.print("基于内部竞赛机制的Multi-Agent交易系统")
     console.print("Multi-Agent Trading System Based on Internal Contest Mechanism")
     console.print(f"版本: 1.1")
+
+@app.command()
+def export_pdf(
+    md: Path = typer.Option(..., "--md", "-m", help="输入Markdown文件路径", exists=True, readable=True),
+    out_pdf: Optional[Path] = typer.Option(None, "--pdf", help="输出PDF文件路径"),
+    out_html: Optional[Path] = typer.Option(None, "--html", help="输出HTML文件路径(可选)"),
+    title: Optional[str] = typer.Option(None, "--title", help="文档标题(可选)"),
+):
+    """将Markdown导出为PDF (中转为HTML)。"""
+    try:
+        # 延迟导入以减少启动时间
+        from .export.md_to_pdf import export_markdown_to_pdf
+    except Exception as e:
+        console.print(f"[red]导出模块导入失败: {e}[/red]")
+        raise typer.Exit(1)
+
+    try:
+        output_dir = out_pdf.parent if (out_pdf and out_pdf.parent) else md.parent
+        html_name = out_html.name if out_html else None
+        pdf_name = out_pdf.name if out_pdf else None
+
+        # Heuristic: if file name contains data_report_, enable stronger nested-list handling
+        is_data_report = "data_report_" in md.name
+        extra_css = None
+        normalize_ol = False
+        if is_data_report:
+            extra_css = (
+                ".markdown-body li > ul, .markdown-body li > ol { margin-left: 2.2em; }\n"
+                ".markdown-body ul ul, .markdown-body ol ol { margin-left: 2.0em; }\n"
+                ".markdown-body ol > li > ul, .markdown-body ul > li > ol { margin-left: 2.2em; }\n"
+            )
+            normalize_ol = True
+
+        html_path, pdf_path = export_markdown_to_pdf(
+            md,
+            output_dir=output_dir,
+            html_filename=html_name,
+            pdf_filename=pdf_name,
+            title=title,
+            extra_css=extra_css,
+            normalize_ol_sublist=normalize_ol,
+        )
+    except Exception as e:
+        console.print(f"[red]导出失败: {e}[/red]")
+        raise typer.Exit(1)
+
+    console.print("[green]导出完成[/green]")
+    console.print(f"HTML: {html_path}")
+    console.print(f"PDF : {pdf_path}")
 
 if __name__ == "__main__":
     app()
