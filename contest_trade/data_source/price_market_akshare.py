@@ -187,7 +187,7 @@ class PriceMarketAkshare(DataSourceBase):
                         'close_price': float(row['close']),
                         'price_change': price_change,
                         'price_change_rate': price_change_rate,
-                        'trade_amount': float(row['volume']) * float(row['close']),  # 估算成交额
+                        'trade_amount': float(row['volume']) * float(row['close']) * 1000,  # 估算成交额，乘以1000修正单位
                         'trade_lots': int(row['volume'])
                     }
                     

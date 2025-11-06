@@ -378,7 +378,7 @@ class PriceMarket(DataSourceBase):
             desc += f"- 最高价: {data['high_price']:.2f}点\n"
             desc += f"- 最低价: {data['low_price']:.2f}点\n"
             desc += f"- 涨跌幅: {change_sign}{data['price_change']:.2f}点 ({rate_sign}{data['price_change_rate']*100:.2f}%)\n"
-            desc += f"- 成交额: {data['trade_amount']/100000000:.1f}亿元\n"
+            desc += f"- 成交额: {data['trade_amount']/100000:.1f}亿元\n"
             desc += f"- 成交量: {data['trade_lots']/10000:.0f}万手"
             
             descriptions.append(desc)
