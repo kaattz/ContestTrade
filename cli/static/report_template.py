@@ -246,8 +246,8 @@ class FinalReportGenerator:
                 report_content += f"#### {i}. {symbol_name} ({symbol_code})\n\n"
                 report_content += f"- **{self.get_text('投资动作', 'Investment Action')}**: {action}\n"
                 
-                # 使用重构的函数获取agent名称
-                agent_name = self.get_agent_name(agent_id)
+                # 使用重构的函数获取agent名称，优先从signal中获取
+                agent_name = self.get_agent_name(agent_id, signal)
                 report_content += f"- **{self.get_text('分析来源', 'Analysis Source')}**: {agent_name}\n"
                 
                 # 证据详情
@@ -280,8 +280,8 @@ class FinalReportGenerator:
             for i, signal in enumerate(invalid_signals, 1):
                 agent_id = signal.get('agent_id', 'N/A')
                 
-                # 使用重构的函数获取agent名称
-                agent_name = self.get_agent_name(agent_id)
+                # 使用重构的函数获取agent名称，优先从signal中获取
+                agent_name = self.get_agent_name(agent_id, signal)
                 report_content += f"{i}. {agent_name} - {self.get_text('无明确投资机会', 'No clear investment opportunity')}\n"
             
             report_content += "\n"
@@ -391,8 +391,8 @@ class FinalReportGenerator:
             
             status = self.get_text("✅ 推荐", "✅ Recommended") if has_opportunity == 'yes' else self.get_text("❌ 排除", "❌ Excluded")
             
-            # 使用重构的函数获取agent名称
-            agent_display_name = self.get_agent_name(agent_id)
+            # 使用重构的函数获取agent名称，优先从signal中获取
+            agent_display_name = self.get_agent_name(agent_id, signal)
             
             table.add_row(
                 str(i),
