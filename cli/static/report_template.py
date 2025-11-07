@@ -174,6 +174,23 @@ class FinalReportGenerator:
     def get_text(self, cn_text: str, en_text: str) -> str:
         return en_text if self.market_type == 'US-Stock' else cn_text
         
+    def get_agent_name(self, agent_id: str) -> str:
+        """获取Agent名称"""
+        agent_name = f"agent {agent_id}"
+        try:
+            # 尝试从final_state中获取agent名称
+            if hasattr(self, 'final_state') and self.final_state:
+                step_results = self.final_state.get('step_results', {})
+                research_agents = step_results.get('research_agents', {})
+                if agent_id in research_agents:
+                    agent_config = research_agents[agent_id].get('config', {})
+                    if agent_config and 'agent_name' in agent_config:
+                        agent_name = agent_config['agent_name']
+        except:
+            # 如果获取失败，使用默认格式
+            agent_name = f"agent {agent_id}"
+        return agent_name
+        
     def generate_markdown_report(self, save_path: Path) -> str:
         """生成Markdown格式的报告"""
         
@@ -228,7 +245,10 @@ class FinalReportGenerator:
                 
                 report_content += f"#### {i}. {symbol_name} ({symbol_code})\n\n"
                 report_content += f"- **{self.get_text('投资动作', 'Investment Action')}**: {action}\n"
-                report_content += f"- **{self.get_text('分析来源', 'Analysis Source')}**: Research Agent {agent_id}\n"
+                
+                # 使用重构的函数获取agent名称
+                agent_name = self.get_agent_name(agent_id)
+                report_content += f"- **{self.get_text('分析来源', 'Analysis Source')}**: {agent_name}\n"
                 
                 # 证据详情
                 evidence_list = signal.get('evidence_list', [])
@@ -259,7 +279,10 @@ class FinalReportGenerator:
             
             for i, signal in enumerate(invalid_signals, 1):
                 agent_id = signal.get('agent_id', 'N/A')
-                report_content += f"{i}. Research Agent {agent_id} - {self.get_text('无明确投资机会', 'No clear investment opportunity')}\n"
+                
+                # 使用重构的函数获取agent名称
+                agent_name = self.get_agent_name(agent_id)
+                report_content += f"{i}. {agent_name} - {self.get_text('无明确投资机会', 'No clear investment opportunity')}\n"
             
             report_content += "\n"
         
@@ -368,12 +391,15 @@ class FinalReportGenerator:
             
             status = self.get_text("✅ 推荐", "✅ Recommended") if has_opportunity == 'yes' else self.get_text("❌ 排除", "❌ Excluded")
             
+            # 使用重构的函数获取agent名称
+            agent_display_name = self.get_agent_name(agent_id)
+            
             table.add_row(
                 str(i),
                 symbol_name,
                 symbol_code,
                 action,
-                f"Agent {agent_id}",
+                agent_display_name,
                 status
             )
         

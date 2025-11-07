@@ -46,9 +46,18 @@ class SimpleTradeCompany:
         with open(belief_list_path, 'r', encoding='utf-8') as f:
             belief_list = json.load(f)
 
-        for agent_config_idx, belief in enumerate(belief_list):
+        for agent_config_idx, belief_config in enumerate(belief_list):
+            # 支持新旧两种格式
+            if isinstance(belief_config, dict):
+                agent_name = belief_config.get('name', f"agent_{agent_config_idx}")
+                belief = belief_config.get('belief', '')
+            else:
+                # 兼容旧格式（字符串数组）
+                agent_name = f"agent_{agent_config_idx}"
+                belief = belief_config
+                
             custom_config = ResearchAgentConfig(
-                agent_name=f"agent_{agent_config_idx}",
+                agent_name=agent_name,
                 belief=belief,
             )
             self.research_agents[agent_config_idx] = ResearchAgent(custom_config)
