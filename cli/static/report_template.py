@@ -174,8 +174,12 @@ class FinalReportGenerator:
     def get_text(self, cn_text: str, en_text: str) -> str:
         return en_text if self.market_type == 'US-Stock' else cn_text
         
-    def get_agent_name(self, agent_id: str) -> str:
+    def get_agent_name(self, agent_id: str, signal: Dict = None) -> str:
         """获取Agent名称"""
+        # 优先从signal中获取agent_name
+        if signal and 'agent_name' in signal:
+            return signal['agent_name']
+            
         agent_name = f"agent {agent_id}"
         try:
             # 尝试从final_state中获取agent名称
