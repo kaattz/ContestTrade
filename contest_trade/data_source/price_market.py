@@ -23,36 +23,16 @@ class PriceMarket(DataSourceBase):
             if df is not None:
                 return df
             
-            trade_date = get_previous_trading_date(trigger_time)     
-            # 如果触发日为交易日且已有当日数据，则优先使用触发日
-            try:
-                trigger_day = datetime.strptime(trigger_time, '%Y-%m-%d %H:%M:%S').strftime('%Y%m%d')
-                if trigger_day != trade_date:
-                    same_day = TushareDataProvider.get_current_day_kline_data(trigger_day)
-                    if isinstance(same_day, dict) and len(same_day) > 0:
-                        trade_date = trigger_day
-                        logger.info(f"触发当日({trigger_day})为交易日，使用当日数据")
-            except Exception:
-                pass
-
-            # 若触发时间在当日收盘前（如 09:00 或 14:00），强制回退到上一个交易日
-            try:
-                _dt = datetime.strptime(trigger_time, '%Y-%m-%d %H:%M:%S')
-            except Exception:
-                _dt = datetime.strptime(trigger_time.split(' ')[0] + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
-            # 收盘时间 15:00
-            if _dt.hour < 15 or (_dt.hour == 15 and _dt.minute < 0):
-                _today_str = _dt.strftime('%Y%m%d')
-                if trade_date == _today_str:
-                    _prev_dt = _dt - pd.Timedelta(days=1)
-                    _prev_trigger = _prev_dt.strftime('%Y-%m-%d %H:%M:%S')
-                    trade_date = get_previous_trading_date(_prev_trigger)
+            # 直接使用get_previous_trading_date函数，它已经包含了时间判断逻辑
+            trade_date = get_previous_trading_date(trigger_time)
+            logger.info(f"使用交易日: {trade_date} (触发时间: {trigger_time})")
             logger.info(f"获取 {trade_date} 的价格市场数据")
 
-            llm_summary_dict = await self.get_llm_summary(trade_date)
+            llm_summary = await self.get_llm_summary(trade_date)
             data = [{
                 "title": f"{trade_date} 市场宏观数据汇总（触发时间 {trigger_time}）",
-                "content": llm_summary_dict["llm_summary"],
+                "subtitle": f"数据交易时间: {trade_date}",
+                "content": llm_summary["llm_summary"],
                 "pub_time": trigger_time,
                 "url": None
             }]

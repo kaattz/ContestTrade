@@ -26,6 +26,23 @@ from .utils import get_trigger_time_for_market, get_market_selection
 import sys
 from pathlib import Path
 
+# 导入日期工具函数以获取交易时间
+try:
+    from ..contest_trade.utils.date_utils import get_previous_trading_date
+except ImportError:
+    try:
+        from contest_trade.utils.date_utils import get_previous_trading_date
+    except ImportError:
+        # 作为最后的选择，添加父目录到路径并导入
+        import sys
+        from pathlib import Path
+        here = Path(__file__).resolve()
+        repo_root = here.parents[1]  # ContestTrade/cli
+        parent_dir = repo_root.parent
+        if str(parent_dir) not in sys.path:
+            sys.path.insert(0, str(parent_dir))
+        from ContestTrade.contest_trade.utils.date_utils import get_previous_trading_date
+
 console = Console()
 
 def get_text(cn_text: str, en_text: str) -> str:
@@ -140,7 +157,17 @@ class ContestTradeDisplay:
                         files = list(agent_dir.glob(pattern))
                         if files and self.agent_status[agent_name] != "completed":
                             self.update_agent_status(agent_name, "completed")
-                            self.add_message(get_text("Data Analysis Agent", "Data Analysis Agent"), get_text(f"✅ {agent_name} 完成数据分析", f"✅ {agent_name} completed data analysis"))
+                            
+                            # 获取数据数量信息
+                            data_count = self._get_agent_data_count(files[0], agent_name)
+                            
+                            # 根据是否有数据数量信息，显示不同的完成消息
+                            if data_count > 0:
+                                completion_msg = get_text(f"✅ {agent_name} 完成数据分析 (获取数据: {data_count}条)", f"✅ {agent_name} completed data analysis (Data retrieved: {data_count} items)")
+                            else:
+                                completion_msg = get_text(f"✅ {agent_name} 完成数据分析 (无数据)", f"✅ {agent_name} completed data analysis (No data)")
+                            
+                            self.add_message(get_text("Data Analysis Agent", "Data Analysis Agent"), completion_msg)
         
         # 检查reports目录（Research Agent结果）
         reports_dir = Path(PROJECT_ROOT) / "agents_workspace" / "reports"
@@ -191,6 +218,35 @@ class ContestTradeDisplay:
             self._last_console_size = current_size
             return True
         return False
+    
+    def _get_agent_data_count(self, file_path: Path, agent_name: str) -> int:
+        """获取agent的数据数量"""
+        try:
+            import json
+            
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # 根据不同的agent类型获取数据数量
+            if agent_name == "price_market_agent":
+                # price_market_agent的数据在content字段中，计算内容长度作为数据量指标
+                if 'context_string' in data and data['context_string']:
+                    # 如果有内容，返回内容长度作为数据量指标
+                    return len(data['context_string'])
+                else:
+                    return 0
+            else:
+                # 其他agent，如果有references或batch_summaries，返回其数量
+                if 'references' in data and isinstance(data['references'], list):
+                    return len(data['references'])
+                elif 'batch_summaries' in data and isinstance(data['batch_summaries'], list):
+                    return len(data['batch_summaries'])
+                else:
+                    return 0
+                    
+        except Exception as e:
+            # 如果读取失败，返回0
+            return 0
         
     def update_agent_status(self, agent_name: str, status: str):
         """更新Agent状态"""
@@ -308,6 +364,18 @@ class ContestTradeDisplay:
         # 更新进度面板
         progress_text = Text()
         progress_text.append(get_text(f"📅 触发时间: {trigger_time}\n", f"📅 Trigger Time: {trigger_time}\n"), style="cyan")
+        
+        # 添加交易时间
+        try:
+            # 获取交易日期（格式：YYYYMMDD）
+            trade_date = get_previous_trading_date(trigger_time, "%Y%m%d")
+            # 格式化为更易读的格式（YYYY-MM-DD）
+            trade_date_formatted = f"{trade_date[:4]}-{trade_date[4:6]}-{trade_date[6:]}"
+            progress_text.append(get_text(f"💹 交易时间: {trade_date_formatted}\n", f"💹 Trading Date: {trade_date_formatted}\n"), style="green")
+        except Exception as e:
+            # 如果获取交易时间失败，显示错误信息
+            progress_text.append(get_text(f"💹 交易时间: 获取失败\n", f"💹 Trading Date: Failed to get\n"), style="red")
+        
         progress_text.append(get_text(f"🎯 当前任务: {self.current_task}\n", f"🎯 Current Task: {self.current_task}\n"), style="yellow")
         if self.progress_info:
             progress_text.append(get_text(f"📈 进度: {self.progress_info}\n", f"📈 Progress: {self.progress_info}\n"), style="green")

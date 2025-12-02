@@ -40,7 +40,32 @@ class TushareDataProvider:
                 return pd.DataFrame()
                 
         except Exception as e:
-            logger.error(f"获取 {trade_date} {func_name} 数据失败: {e}")
+            error_msg = str(e)
+            logger.error(f"获取 {trade_date} {func_name} 数据失败: {error_msg}")
+            
+            # 打印详细的错误信息到控制台
+            print(f"❌ Tushare 数据获取失败!")
+            print(f"   交易日期: {trade_date}")
+            print(f"   函数名: {func_name}")
+            print(f"   参数: {func_kwargs}")
+            print(f"   错误类型: {type(e).__name__}")
+            print(f"   错误信息: {error_msg}")
+            
+            # 检查是否是常见的API限制错误
+            error_msg_lower = error_msg.lower()
+            if "limit" in error_msg_lower or "frequency" in error_msg_lower or "too many" in error_msg_lower:
+                print("   ⚠️  这可能是API调用频率限制错误")
+                print("   💡 建议：降低调用频率或升级Tushare账户")
+            elif "token" in error_msg_lower or "auth" in error_msg_lower or "permission" in error_msg_lower:
+                print("   ⚠️  这可能是Token认证错误")
+                print("   💡 建议：检查config.yaml中的tushare_key配置")
+            elif "network" in error_msg_lower or "connection" in error_msg_lower:
+                print("   ⚠️  这可能是网络连接错误")
+                print("   💡 建议：检查网络连接或稍后重试")
+            elif "一天" in error_msg or "每分钟" in error_msg:
+                print("   ⚠️  这可能是API调用次数限制")
+                print("   💡 建议：等待一段时间后重试或升级Tushare账户")
+            
             return pd.DataFrame()
 
     @staticmethod

@@ -50,12 +50,32 @@ class CachedTusharePro:
         else:
             if verbose:
                 print(f"cache miss for {func_name} with args: {func_kwargs}")
-            result = getattr(self.pro, func_name)(**func_kwargs)
-            if verbose:
-                print(f"save result to {func_cache_file}")
-            with open(func_cache_file, "wb") as f:
-                pickle.dump(result, f)
-            return result
+            try:
+                result = getattr(self.pro, func_name)(**func_kwargs)
+                if verbose:
+                    print(f"save result to {func_cache_file}")
+                with open(func_cache_file, "wb") as f:
+                    pickle.dump(result, f)
+                return result
+            except Exception as e:
+                # 打印详细的错误信息
+                print(f"❌ Tushare API 调用失败!")
+                print(f"   函数名: {func_name}")
+                print(f"   参数: {func_kwargs}")
+                print(f"   错误类型: {type(e).__name__}")
+                print(f"   错误信息: {str(e)}")
+                
+                # 检查是否是常见的API限制错误
+                error_msg = str(e).lower()
+                if "limit" in error_msg or "frequency" in error_msg or "too many" in error_msg:
+                    print("   ⚠️  这可能是API调用频率限制错误")
+                elif "token" in error_msg or "auth" in error_msg or "permission" in error_msg:
+                    print("   ⚠️  这可能是Token认证错误")
+                elif "network" in error_msg or "connection" in error_msg:
+                    print("   ⚠️  这可能是网络连接错误")
+                
+                # 重新抛出异常以便上层处理
+                raise e
 
 pro_cached = CachedTusharePro()
 
