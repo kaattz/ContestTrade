@@ -3,7 +3,7 @@ Research信号评分器
 """
 
 import json
-import logging
+from loguru import logger
 import asyncio
 import requests
 from pathlib import Path
@@ -11,7 +11,6 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 from research_contest_types import SignalData, JudgerScore
 
-logger = logging.getLogger(__name__)
 
 
 class ResearchSignalJudger:

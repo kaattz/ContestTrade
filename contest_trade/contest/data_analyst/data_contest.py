@@ -10,7 +10,7 @@ DataContest - 数据因子竞争系统主控制器
 """
 
 import sys
-import logging
+from loguru import logger
 import asyncio
 from pathlib import Path
 from typing import List, Dict, Optional
@@ -27,7 +27,6 @@ from data_manager import ContestDataManager
 from evaluator import ContestEvaluator
 from predictor import ContestPredictor
 
-logger = logging.getLogger(__name__)
 
 
 class DataContest:

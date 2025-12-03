@@ -7,7 +7,7 @@ Contest预测模块
 - 支持LightGBM机器学习预测和简单均值预测
 """
 
-import logging
+from loguru import logger
 import pandas as pd
 import joblib
 from pathlib import Path
@@ -15,7 +15,6 @@ from typing import List, Dict, Optional, Union
 
 from data_contest_types import FactorData
 
-logger = logging.getLogger(__name__)
 
 
 class ContestPredictor:

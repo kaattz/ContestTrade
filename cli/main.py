@@ -26,6 +26,19 @@ from .utils import get_trigger_time_for_market, get_market_selection
 import sys
 from pathlib import Path
 
+# 初始化日志配置 - 尽早导入以确保所有日志都使用配置
+try:
+    from ..contest_trade.utils.logger_config import setup_logger
+    setup_logger()
+except ImportError:
+    try:
+        from contest_trade.utils.logger_config import setup_logger
+        setup_logger()
+    except ImportError:
+        # 如果无法导入日志配置，使用默认设置
+        import warnings
+        warnings.warn("无法导入日志配置，使用默认loguru设置")
+
 # 导入日期工具函数以获取交易时间
 try:
     from ..contest_trade.utils.date_utils import get_previous_trading_date

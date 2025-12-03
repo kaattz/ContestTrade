@@ -5,13 +5,12 @@ Research权重优化器
 """
 
 import json
-import logging
+from loguru import logger
 import numpy as np
 from pathlib import Path
 from typing import Dict, Optional, List
 from research_contest_types import ResearchContestResult
 
-logger = logging.getLogger(__name__)
 
 
 class ResearchWeightOptimizer:

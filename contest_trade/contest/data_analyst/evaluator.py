@@ -9,7 +9,7 @@ Contest评估模块
 """
 
 import asyncio
-import logging
+from loguru import logger
 import re
 from typing import List, Dict, Optional
 
@@ -18,7 +18,6 @@ from data_contest_types import (
     EvaluationResult
 )
 
-logger = logging.getLogger(__name__)
 
 
 class ContestEvaluator:

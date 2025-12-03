@@ -14,6 +14,14 @@ from agents.data_analysis_agent import DataAnalysisAgent, DataAnalysisAgentConfi
 from agents.research_agent import ResearchAgent, ResearchAgentConfig, ResearchAgentInput
 from utils.market_manager import GLOBAL_MARKET_MANAGER
 
+# 初始化日志配置
+try:
+    from utils.logger_config import setup_logger
+    setup_logger()
+except ImportError:
+    import warnings
+    warnings.warn("无法导入日志配置，使用默认loguru设置")
+
 # 统一的状态定义
 class CompanyState(TypedDict):
     trigger_time: str

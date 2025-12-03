@@ -9,7 +9,7 @@ ResearchContest - 统一的研究信号竞争系统
 
 import os
 import sys
-import logging
+from loguru import logger
 import asyncio
 from pathlib import Path
 from typing import List, Dict, Optional, Any
@@ -27,7 +27,6 @@ from research_predictor import ResearchPredictor
 from research_weight_optimizer import ResearchWeightOptimizer
 from research_signal_judger import ResearchSignalJudger
 
-logger = logging.getLogger(__name__)
 
 
 class ResearchContest:

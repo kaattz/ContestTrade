@@ -2,7 +2,7 @@
 Research预测模块
 """
 
-import logging
+from loguru import logger
 import pandas as pd
 import joblib
 import numpy as np
@@ -11,7 +11,6 @@ from typing import List, Dict, Optional, Union
 from research_contest_types import SignalData
 import lightgbm as lgb
 
-logger = logging.getLogger(__name__)
 
 
 class ResearchPredictor:

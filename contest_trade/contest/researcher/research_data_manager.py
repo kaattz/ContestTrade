@@ -4,13 +4,12 @@ Research数据管理器
 
 import re
 import json
-import logging
+from loguru import logger
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from research_contest_types import SignalData
 
-logger = logging.getLogger(__name__)
 
 class ResearchDataManager:
     """研究数据管理器"""

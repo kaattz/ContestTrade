@@ -9,7 +9,7 @@ Contest数据管理模块
 
 import os
 import json
-import logging
+from loguru import logger
 import re
 import sys
 from pathlib import Path
@@ -23,7 +23,6 @@ sys.path.append(str(PROJECT_ROOT))
 from utils.market_manager import GLOBAL_MARKET_MANAGER
 from data_contest_types import FactorData
 
-logger = logging.getLogger(__name__)
 
 
 class ContestDataManager:

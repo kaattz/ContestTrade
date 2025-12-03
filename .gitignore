@@ -237,3 +237,4 @@ test*
 *_cache
 config.yaml
 config_single.yaml
+INTEGRATION_SUMMARY.md

@@ -3,7 +3,7 @@ LightGBM模型训练脚本
 """
 
 import sys
-import logging
+from loguru import logger
 import asyncio
 import traceback
 from pathlib import Path
@@ -12,12 +12,6 @@ from research_contest import ResearchContest
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent.resolve()
 sys.path.append(str(PROJECT_ROOT))
 
-# 设置日志
-logging.basicConfig(
-    level=logging.INFO, 
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 async def async_train_research_models():
     """训练研究信号预测模型"""
